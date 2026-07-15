@@ -1,7 +1,7 @@
-# CrispHive Ruby
+# Crisphive Ruby
 
 The official Ruby SDK for the
-[CrispHive API](https://docs.crisphive.com/).
+[Crisphive API](https://docs.crisphive.com/).
 
 Typed access to the public `/v1` API — customers, bookings, catalog, team and
 fleet.
@@ -25,7 +25,7 @@ gem "crisphive"
 ## Authentication
 
 Every request is authenticated with a secret API key sent as a bearer token.
-Create keys from your CrispHive business dashboard. **The key prefix selects the
+Create keys from your Crisphive business dashboard. **The key prefix selects the
 data environment:**
 
 - `chsk_live_…` → live (production) data
@@ -74,7 +74,7 @@ retries never create a duplicate.
 ## Errors
 
 Non-2xx responses raise `Crisphive::ApiError`; inspect `e.code` and
-`e.response_body` for the CrispHive error code.
+`e.response_body` for the Crisphive error code.
 
 ## Documentation
 

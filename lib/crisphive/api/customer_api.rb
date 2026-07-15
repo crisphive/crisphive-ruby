@@ -1,7 +1,7 @@
 =begin
-#CrispHive Developer API
+#Crisphive Developer API
 
-#Public REST API for integrating CrispHive from your own backend. Authenticate every request with a secret API key as a Bearer token (`Authorization: Bearer chsk_live_…`). The key prefix selects the data environment: `chsk_live_…` → production (live), `chsk_test_…` → sandbox (isolated test).  **Key scopes (restricted keys).** A key is either *full-access* (can call every endpoint below) or *restricted* to a set of permission codes chosen at creation — the same codes as the dashboard permission grid (e.g. `customers_view`, `job_create`, `team_manage`). A restricted key calling an endpoint outside its scope gets `403`. The full code list is the permission catalog (`GET /permission/modules` on the dashboard API). Create, scope, and revoke keys from the business dashboard.  Every response is wrapped in the envelope `{ \"error_code\": 0, \"message\": \"Success\", \"data\": <payload> }`.
+#Public REST API for integrating Crisphive from your own backend. Authenticate every request with a secret API key as a Bearer token (`Authorization: Bearer chsk_live_…`). The key prefix selects the data environment: `chsk_live_…` → production (live), `chsk_test_…` → sandbox (isolated test).  **Key scopes (restricted keys).** A key is either *full-access* (can call every endpoint below) or *restricted* to a set of permission codes chosen at creation — the same codes as the dashboard permission grid (e.g. `customers_view`, `job_create`, `team_manage`). A restricted key calling an endpoint outside its scope gets `403`. The full code list is the permission catalog (`GET /permission/modules` on the dashboard API). Create, scope, and revoke keys from the business dashboard.  Every response is wrapped in the envelope `{ \"error_code\": 0, \"message\": \"Success\", \"data\": <payload> }`.
 
 The version of the OpenAPI document: 1.0
 
@@ -20,9 +20,10 @@ module Crisphive
       @api_client = api_client
     end
     # Create a customer
-    # Adds a new customer record to the current business. Address (street, city, postal_code, ...) and coordinates (latitude/longitude) live under the nested `address` object. service_area_id must be a valid service area UUID belonging to this business.
+    # Creates a customer record — the client/account profile a job request (work order) is booked against; use it to import or sync customers from your own CRM, website lead form or intake flow. Address (street, city, postal_code, ...) and coordinates (latitude/longitude) live under the nested `address` object. service_area_id must be a valid service area UUID belonging to this business.
     # @param customer_create_request [CustomerCreateRequest] Customer details
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key replays the original response (header Idempotent-Replayed: true) instead of re-running the operation. Reusing a key with a different body returns 422 IDEMPOTENCY_KEY_REUSE.
     # @return [CreateCustomer200Response]
     def create_customer(customer_create_request, opts = {})
       data, _status_code, _headers = create_customer_with_http_info(customer_create_request, opts)
@@ -30,9 +31,10 @@ module Crisphive
     end
 
     # Create a customer
-    # Adds a new customer record to the current business. Address (street, city, postal_code, ...) and coordinates (latitude/longitude) live under the nested &#x60;address&#x60; object. service_area_id must be a valid service area UUID belonging to this business.
+    # Creates a customer record — the client/account profile a job request (work order) is booked against; use it to import or sync customers from your own CRM, website lead form or intake flow. Address (street, city, postal_code, ...) and coordinates (latitude/longitude) live under the nested &#x60;address&#x60; object. service_area_id must be a valid service area UUID belonging to this business.
     # @param customer_create_request [CustomerCreateRequest] Customer details
     # @param [Hash] opts the optional parameters
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key replays the original response (header Idempotent-Replayed: true) instead of re-running the operation. Reusing a key with a different body returns 422 IDEMPOTENCY_KEY_REUSE.
     # @return [Array<(CreateCustomer200Response, Integer, Hash)>] CreateCustomer200Response data, response status code and response headers
     def create_customer_with_http_info(customer_create_request, opts = {})
       if @api_client.config.debugging
@@ -57,6 +59,7 @@ module Crisphive
       if !content_type.nil?
           header_params['Content-Type'] = content_type
       end
+      header_params[:'Idempotency-Key'] = opts[:'idempotency_key'] if !opts[:'idempotency_key'].nil?
 
       # form parameters
       form_params = opts[:form_params] || {}
@@ -88,7 +91,7 @@ module Crisphive
     end
 
     # Delete a customer
-    # Soft-deletes a customer record.
+    # Soft-deletes a customer record, removing it from the active customer directory; existing bookings keep their customer snapshot.
     # @param id [String] Customer ID
     # @param [Hash] opts the optional parameters
     # @return [ResponseEnvelope]
@@ -98,7 +101,7 @@ module Crisphive
     end
 
     # Delete a customer
-    # Soft-deletes a customer record.
+    # Soft-deletes a customer record, removing it from the active customer directory; existing bookings keep their customer snapshot.
     # @param id [String] Customer ID
     # @param [Hash] opts the optional parameters
     # @return [Array<(ResponseEnvelope, Integer, Hash)>] ResponseEnvelope data, response status code and response headers
@@ -151,7 +154,7 @@ module Crisphive
     end
 
     # Get a customer
-    # Returns the full profile, contact details and spending summary. contact.preferred_technician includes {id, name}. contact.service_area includes {id, name}. contact.address.latitude / contact.address.longitude are null if no coordinates saved.
+    # Returns the full customer record: profile, contact details, tier and lifetime spending summary — a 360° client view for support, upsell or CRM enrichment. contact.preferred_technician includes {id, name}. contact.service_area includes {id, name}. contact.address.latitude / contact.address.longitude are null if no coordinates saved.
     # @param id [String] Customer ID (UUID)
     # @param [Hash] opts the optional parameters
     # @return [GetCustomer200Response]
@@ -161,7 +164,7 @@ module Crisphive
     end
 
     # Get a customer
-    # Returns the full profile, contact details and spending summary. contact.preferred_technician includes {id, name}. contact.service_area includes {id, name}. contact.address.latitude / contact.address.longitude are null if no coordinates saved.
+    # Returns the full customer record: profile, contact details, tier and lifetime spending summary — a 360° client view for support, upsell or CRM enrichment. contact.preferred_technician includes {id, name}. contact.service_area includes {id, name}. contact.address.latitude / contact.address.longitude are null if no coordinates saved.
     # @param id [String] Customer ID (UUID)
     # @param [Hash] opts the optional parameters
     # @return [Array<(GetCustomer200Response, Integer, Hash)>] GetCustomer200Response data, response status code and response headers
@@ -214,7 +217,7 @@ module Crisphive
     end
 
     # List customers
-    # Returns a paginated, searchable list of customers for the current business.
+    # Returns a paginated, searchable directory of the business's customer records — the customer database (CRM) behind every booking and work order. Supports the `since`/`next_since` cursor for incremental sync into an external CRM, ERP or marketing tool.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :q Search name, UID, phone, email
     # @option opts [Array<String>] :tier Filter by tier: regular|vip (repeatable)
@@ -231,7 +234,7 @@ module Crisphive
     end
 
     # List customers
-    # Returns a paginated, searchable list of customers for the current business.
+    # Returns a paginated, searchable directory of the business&#39;s customer records — the customer database (CRM) behind every booking and work order. Supports the &#x60;since&#x60;/&#x60;next_since&#x60; cursor for incremental sync into an external CRM, ERP or marketing tool.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :q Search name, UID, phone, email
     # @option opts [Array<String>] :tier Filter by tier: regular|vip (repeatable)
@@ -295,7 +298,7 @@ module Crisphive
     end
 
     # Update a customer
-    # Replaces mutable fields on a customer record. Pass service_area_id=\"\" to clear the service area. Address fields (including latitude/longitude) live under the nested `address` object.
+    # Replaces mutable fields on a customer record — two-way CRM sync friendly (push changes from your system of record). Pass service_area_id=\"\" to clear the service area. Address fields (including latitude/longitude) live under the nested `address` object.
     # @param id [String] Customer ID (UUID)
     # @param customer_update_request [CustomerUpdateRequest] Fields to update
     # @param [Hash] opts the optional parameters
@@ -306,7 +309,7 @@ module Crisphive
     end
 
     # Update a customer
-    # Replaces mutable fields on a customer record. Pass service_area_id&#x3D;\&quot;\&quot; to clear the service area. Address fields (including latitude/longitude) live under the nested &#x60;address&#x60; object.
+    # Replaces mutable fields on a customer record — two-way CRM sync friendly (push changes from your system of record). Pass service_area_id&#x3D;\&quot;\&quot; to clear the service area. Address fields (including latitude/longitude) live under the nested &#x60;address&#x60; object.
     # @param id [String] Customer ID (UUID)
     # @param customer_update_request [CustomerUpdateRequest] Fields to update
     # @param [Hash] opts the optional parameters

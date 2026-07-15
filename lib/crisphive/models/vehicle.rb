@@ -1,7 +1,7 @@
 =begin
-#CrispHive Developer API
+#Crisphive Developer API
 
-#Public REST API for integrating CrispHive from your own backend. Authenticate every request with a secret API key as a Bearer token (`Authorization: Bearer chsk_live_…`). The key prefix selects the data environment: `chsk_live_…` → production (live), `chsk_test_…` → sandbox (isolated test).  **Key scopes (restricted keys).** A key is either *full-access* (can call every endpoint below) or *restricted* to a set of permission codes chosen at creation — the same codes as the dashboard permission grid (e.g. `customers_view`, `job_create`, `team_manage`). A restricted key calling an endpoint outside its scope gets `403`. The full code list is the permission catalog (`GET /permission/modules` on the dashboard API). Create, scope, and revoke keys from the business dashboard.  Every response is wrapped in the envelope `{ \"error_code\": 0, \"message\": \"Success\", \"data\": <payload> }`.
+#Public REST API for integrating Crisphive from your own backend. Authenticate every request with a secret API key as a Bearer token (`Authorization: Bearer chsk_live_…`). The key prefix selects the data environment: `chsk_live_…` → production (live), `chsk_test_…` → sandbox (isolated test).  **Key scopes (restricted keys).** A key is either *full-access* (can call every endpoint below) or *restricted* to a set of permission codes chosen at creation — the same codes as the dashboard permission grid (e.g. `customers_view`, `job_create`, `team_manage`). A restricted key calling an endpoint outside its scope gets `403`. The full code list is the permission catalog (`GET /permission/modules` on the dashboard API). Create, scope, and revoke keys from the business dashboard.  Every response is wrapped in the envelope `{ \"error_code\": 0, \"message\": \"Success\", \"data\": <payload> }`.
 
 The version of the OpenAPI document: 1.0
 
@@ -39,13 +39,16 @@ module Crisphive
     # Vehicle display name.
     attr_accessor :name
 
+    # Live operational state derived from the vehicle's jobs: on_job = a job's scheduled window contains now (the vehicle is out working); assigned = attached to an upcoming/open job that is not in progress; other values mirror status.
+    attr_accessor :operational_status
+
     # The technician who currently owns (claimed) this vehicle; null if unowned.
     attr_accessor :owner
 
     # License plate number. Empty if not set.
     attr_accessor :plate_number
 
-    # Operational status.
+    # Stored status. on_job here means \"attached to an open job\" (set at assignment, cleared at complete/archive/unassign) — see operational_status for the live state.
     attr_accessor :status
 
     # UUIDs of technicians who use this vehicle (derived from each technician's vehicle list). Empty array if none.
@@ -96,6 +99,7 @@ module Crisphive
         :'id' => :'id',
         :'model' => :'model',
         :'name' => :'name',
+        :'operational_status' => :'operational_status',
         :'owner' => :'owner',
         :'plate_number' => :'plate_number',
         :'status' => :'status',
@@ -123,6 +127,7 @@ module Crisphive
         :'id' => :'String',
         :'model' => :'String',
         :'name' => :'String',
+        :'operational_status' => :'String',
         :'owner' => :'VehicleOwner',
         :'plate_number' => :'String',
         :'status' => :'String',
@@ -187,6 +192,10 @@ module Crisphive
         self.name = attributes[:'name']
       end
 
+      if attributes.key?(:'operational_status')
+        self.operational_status = attributes[:'operational_status']
+      end
+
       if attributes.key?(:'owner')
         self.owner = attributes[:'owner']
       end
@@ -234,11 +243,23 @@ module Crisphive
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
+      operational_status_validator = EnumAttributeValidator.new('String', ["inactive", "idle", "assigned", "on_job", "maintenance"])
+      return false unless operational_status_validator.valid?(@operational_status)
       status_validator = EnumAttributeValidator.new('String', ["inactive", "idle", "on_job", "maintenance"])
       return false unless status_validator.valid?(@status)
       vehicle_type_validator = EnumAttributeValidator.new('String', ["van", "truck", "car"])
       return false unless vehicle_type_validator.valid?(@vehicle_type)
       true
+    end
+
+    # Custom attribute writer method checking allowed values (enum).
+    # @param [Object] operational_status Object to be assigned
+    def operational_status=(operational_status)
+      validator = EnumAttributeValidator.new('String', ["inactive", "idle", "assigned", "on_job", "maintenance"])
+      unless validator.valid?(operational_status)
+        fail ArgumentError, "invalid value for \"operational_status\", must be one of #{validator.allowable_values}."
+      end
+      @operational_status = operational_status
     end
 
     # Custom attribute writer method checking allowed values (enum).
@@ -274,6 +295,7 @@ module Crisphive
           id == o.id &&
           model == o.model &&
           name == o.name &&
+          operational_status == o.operational_status &&
           owner == o.owner &&
           plate_number == o.plate_number &&
           status == o.status &&
@@ -293,7 +315,7 @@ module Crisphive
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [brand, business_id, created_at, current_mileage, deleted_at, id, model, name, owner, plate_number, status, technician_ids, updated_at, utilization_percent, vehicle_type, year].hash
+      [brand, business_id, created_at, current_mileage, deleted_at, id, model, name, operational_status, owner, plate_number, status, technician_ids, updated_at, utilization_percent, vehicle_type, year].hash
     end
 
     # Builds the object from hash

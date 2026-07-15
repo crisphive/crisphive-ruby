@@ -1,7 +1,7 @@
 =begin
-#CrispHive Developer API
+#Crisphive Developer API
 
-#Public REST API for integrating CrispHive from your own backend. Authenticate every request with a secret API key as a Bearer token (`Authorization: Bearer chsk_live_…`). The key prefix selects the data environment: `chsk_live_…` → production (live), `chsk_test_…` → sandbox (isolated test).  **Key scopes (restricted keys).** A key is either *full-access* (can call every endpoint below) or *restricted* to a set of permission codes chosen at creation — the same codes as the dashboard permission grid (e.g. `customers_view`, `job_create`, `team_manage`). A restricted key calling an endpoint outside its scope gets `403`. The full code list is the permission catalog (`GET /permission/modules` on the dashboard API). Create, scope, and revoke keys from the business dashboard.  Every response is wrapped in the envelope `{ \"error_code\": 0, \"message\": \"Success\", \"data\": <payload> }`.
+#Public REST API for integrating Crisphive from your own backend. Authenticate every request with a secret API key as a Bearer token (`Authorization: Bearer chsk_live_…`). The key prefix selects the data environment: `chsk_live_…` → production (live), `chsk_test_…` → sandbox (isolated test).  **Key scopes (restricted keys).** A key is either *full-access* (can call every endpoint below) or *restricted* to a set of permission codes chosen at creation — the same codes as the dashboard permission grid (e.g. `customers_view`, `job_create`, `team_manage`). A restricted key calling an endpoint outside its scope gets `403`. The full code list is the permission catalog (`GET /permission/modules` on the dashboard API). Create, scope, and revoke keys from the business dashboard.  Every response is wrapped in the envelope `{ \"error_code\": 0, \"message\": \"Success\", \"data\": <payload> }`.
 
 The version of the OpenAPI document: 1.0
 
@@ -20,7 +20,7 @@ module Crisphive
       @api_client = api_client
     end
     # List skill categories
-    # Returns paginated skill categories for the current business, ordered alphabetically.
+    # Returns paginated skill categories — how the business groups technician qualifications by trade or specialty (e.g. HVAC, plumbing, electrical) — ordered alphabetically.
     # @param [Hash] opts the optional parameters
     # @option opts [Integer] :page Page number (default: 1)
     # @option opts [Integer] :limit Page size (default: 15, max: 1000)
@@ -31,7 +31,7 @@ module Crisphive
     end
 
     # List skill categories
-    # Returns paginated skill categories for the current business, ordered alphabetically.
+    # Returns paginated skill categories — how the business groups technician qualifications by trade or specialty (e.g. HVAC, plumbing, electrical) — ordered alphabetically.
     # @param [Hash] opts the optional parameters
     # @option opts [Integer] :page Page number (default: 1)
     # @option opts [Integer] :limit Page size (default: 15, max: 1000)
@@ -83,7 +83,7 @@ module Crisphive
     end
 
     # List all skills
-    # Returns the flat list of all active skills for the current business across every category. Use this to discover the skill UUIDs accepted in `skill_ids` when creating a job request. (For a category-grouped view, use GET /skill-categories and GET /skill-categories/{id}/skills.)
+    # Returns the flat list of all active technician skills / qualifications for the current business — the vocabulary the dispatch engine uses for skill-based matching when assigning technicians and crews. Use it to discover the skill UUIDs accepted in `skill_ids` when creating a job request. (For a category-grouped view, use GET /skill-categories and GET /skill-categories/{id}/skills.)
     # @param [Hash] opts the optional parameters
     # @return [ListSkills200Response]
     def list_skills(opts = {})
@@ -92,7 +92,7 @@ module Crisphive
     end
 
     # List all skills
-    # Returns the flat list of all active skills for the current business across every category. Use this to discover the skill UUIDs accepted in &#x60;skill_ids&#x60; when creating a job request. (For a category-grouped view, use GET /skill-categories and GET /skill-categories/{id}/skills.)
+    # Returns the flat list of all active technician skills / qualifications for the current business — the vocabulary the dispatch engine uses for skill-based matching when assigning technicians and crews. Use it to discover the skill UUIDs accepted in &#x60;skill_ids&#x60; when creating a job request. (For a category-grouped view, use GET /skill-categories and GET /skill-categories/{id}/skills.)
     # @param [Hash] opts the optional parameters
     # @return [Array<(ListSkills200Response, Integer, Hash)>] ListSkills200Response data, response status code and response headers
     def list_skills_with_http_info(opts = {})
@@ -140,7 +140,7 @@ module Crisphive
     end
 
     # List skills in a category
-    # Returns paginated skills belonging to the given category, ordered alphabetically. The `members` field on each skill is the count of active technicians currently assigned to it.
+    # Returns paginated skills (technician qualifications/certifications) belonging to the given trade/specialty category, ordered alphabetically. The `members` field on each skill is the count of active technicians currently holding it — a quick capacity check per capability.
     # @param id [String] Skill category ID (UUID)
     # @param [Hash] opts the optional parameters
     # @option opts [Integer] :page Page number (default: 1)
@@ -152,7 +152,7 @@ module Crisphive
     end
 
     # List skills in a category
-    # Returns paginated skills belonging to the given category, ordered alphabetically. The &#x60;members&#x60; field on each skill is the count of active technicians currently assigned to it.
+    # Returns paginated skills (technician qualifications/certifications) belonging to the given trade/specialty category, ordered alphabetically. The &#x60;members&#x60; field on each skill is the count of active technicians currently holding it — a quick capacity check per capability.
     # @param id [String] Skill category ID (UUID)
     # @param [Hash] opts the optional parameters
     # @option opts [Integer] :page Page number (default: 1)
@@ -204,6 +204,152 @@ module Crisphive
       data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
       if @api_client.config.debugging
         @api_client.config.logger.debug "API called: BusinessSkillApi#list_skills_by_category\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # List skills for a technician
+    # Returns paginated skills assigned to the technician. By default (`eligible_only` omitted or `true`) only active skills are returned — pass `eligible_only=false` to include inactive skills.
+    # @param id [String] Technician ID — business_user_profiles.id (UUID)
+    # @param [Hash] opts the optional parameters
+    # @option opts [Boolean] :eligible_only true (default) &#x3D; active skills only; false &#x3D; all assigned skills including inactive
+    # @option opts [Integer] :page Page number (default: 1)
+    # @option opts [Integer] :limit Page size (default: 15, max: 1000)
+    # @return [ListTechnicianSkills200Response]
+    def list_technician_skills(id, opts = {})
+      data, _status_code, _headers = list_technician_skills_with_http_info(id, opts)
+      data
+    end
+
+    # List skills for a technician
+    # Returns paginated skills assigned to the technician. By default (&#x60;eligible_only&#x60; omitted or &#x60;true&#x60;) only active skills are returned — pass &#x60;eligible_only&#x3D;false&#x60; to include inactive skills.
+    # @param id [String] Technician ID — business_user_profiles.id (UUID)
+    # @param [Hash] opts the optional parameters
+    # @option opts [Boolean] :eligible_only true (default) &#x3D; active skills only; false &#x3D; all assigned skills including inactive
+    # @option opts [Integer] :page Page number (default: 1)
+    # @option opts [Integer] :limit Page size (default: 15, max: 1000)
+    # @return [Array<(ListTechnicianSkills200Response, Integer, Hash)>] ListTechnicianSkills200Response data, response status code and response headers
+    def list_technician_skills_with_http_info(id, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: BusinessSkillApi.list_technician_skills ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling BusinessSkillApi.list_technician_skills"
+      end
+      # resource path
+      local_var_path = '/technicians/{id}/skills'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+      query_params[:'eligible_only'] = opts[:'eligible_only'] if !opts[:'eligible_only'].nil?
+      query_params[:'page'] = opts[:'page'] if !opts[:'page'].nil?
+      query_params[:'limit'] = opts[:'limit'] if !opts[:'limit'].nil?
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ListTechnicianSkills200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"BusinessSkillApi.list_technician_skills",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: BusinessSkillApi#list_technician_skills\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Replace a technician's skills
+    # Sets the technician's full skill set in one call (replace semantics): skills not in the list are removed, new ones added. Pass an empty list to clear all. All skills must be active and belong to the business — on SKILL_NOT_FOUND (404) the `data` field contains `{\"missing_ids\": [\"uuid\", ...]}`; on SKILL_INACTIVE (409) it contains `{\"inactive_ids\": [\"uuid\", ...]}`.
+    # @param id [String] Technician ID — business_user_profiles.id (UUID)
+    # @param technician_skills_request [TechnicianSkillsRequest] Full list of skill_ids (business_skills.id), 0–100 UUIDs
+    # @param [Hash] opts the optional parameters
+    # @return [ResponseEnvelope]
+    def replace_technician_skills(id, technician_skills_request, opts = {})
+      data, _status_code, _headers = replace_technician_skills_with_http_info(id, technician_skills_request, opts)
+      data
+    end
+
+    # Replace a technician&#39;s skills
+    # Sets the technician&#39;s full skill set in one call (replace semantics): skills not in the list are removed, new ones added. Pass an empty list to clear all. All skills must be active and belong to the business — on SKILL_NOT_FOUND (404) the &#x60;data&#x60; field contains &#x60;{\&quot;missing_ids\&quot;: [\&quot;uuid\&quot;, ...]}&#x60;; on SKILL_INACTIVE (409) it contains &#x60;{\&quot;inactive_ids\&quot;: [\&quot;uuid\&quot;, ...]}&#x60;.
+    # @param id [String] Technician ID — business_user_profiles.id (UUID)
+    # @param technician_skills_request [TechnicianSkillsRequest] Full list of skill_ids (business_skills.id), 0–100 UUIDs
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(ResponseEnvelope, Integer, Hash)>] ResponseEnvelope data, response status code and response headers
+    def replace_technician_skills_with_http_info(id, technician_skills_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: BusinessSkillApi.replace_technician_skills ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling BusinessSkillApi.replace_technician_skills"
+      end
+      # verify the required parameter 'technician_skills_request' is set
+      if @api_client.config.client_side_validation && technician_skills_request.nil?
+        fail ArgumentError, "Missing the required parameter 'technician_skills_request' when calling BusinessSkillApi.replace_technician_skills"
+      end
+      # resource path
+      local_var_path = '/technicians/{id}/skills'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(technician_skills_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ResponseEnvelope'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"BusinessSkillApi.replace_technician_skills",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:PATCH, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: BusinessSkillApi#replace_technician_skills\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
       end
       return data, status_code, headers
     end

@@ -1,7 +1,7 @@
 =begin
-#CrispHive Developer API
+#Crisphive Developer API
 
-#Public REST API for integrating CrispHive from your own backend. Authenticate every request with a secret API key as a Bearer token (`Authorization: Bearer chsk_live_…`). The key prefix selects the data environment: `chsk_live_…` → production (live), `chsk_test_…` → sandbox (isolated test).  **Key scopes (restricted keys).** A key is either *full-access* (can call every endpoint below) or *restricted* to a set of permission codes chosen at creation — the same codes as the dashboard permission grid (e.g. `customers_view`, `job_create`, `team_manage`). A restricted key calling an endpoint outside its scope gets `403`. The full code list is the permission catalog (`GET /permission/modules` on the dashboard API). Create, scope, and revoke keys from the business dashboard.  Every response is wrapped in the envelope `{ \"error_code\": 0, \"message\": \"Success\", \"data\": <payload> }`.
+#Public REST API for integrating Crisphive from your own backend. Authenticate every request with a secret API key as a Bearer token (`Authorization: Bearer chsk_live_…`). The key prefix selects the data environment: `chsk_live_…` → production (live), `chsk_test_…` → sandbox (isolated test).  **Key scopes (restricted keys).** A key is either *full-access* (can call every endpoint below) or *restricted* to a set of permission codes chosen at creation — the same codes as the dashboard permission grid (e.g. `customers_view`, `job_create`, `team_manage`). A restricted key calling an endpoint outside its scope gets `403`. The full code list is the permission catalog (`GET /permission/modules` on the dashboard API). Create, scope, and revoke keys from the business dashboard.  Every response is wrapped in the envelope `{ \"error_code\": 0, \"message\": \"Success\", \"data\": <payload> }`.
 
 The version of the OpenAPI document: 1.0
 
@@ -19,20 +19,249 @@ module Crisphive
     def initialize(api_client = ApiClient.default)
       @api_client = api_client
     end
-    # Create a job request (business actor)
+    # Commit emergency insert + cascade reschedule
+    # Applies the cascade previewed by /emergency/preview: assigns the emergency job to the technician and pushes the displaced jobs back (or, with `displacement_mode=reassign`, re-staffs them onto their previewed alternates first), atomically. Supports Idempotency-Key. The server recomputes the plan under a lock and fences each job on its status_version — if anything changed since the preview it returns 409 EMERGENCY_RESCHEDULE_PLAN_DRIFTED (re-preview). Same body as preview + optional `emergency_expected_version`. Isolated feature (see EMERGENCY_RESCHEDULE_DESIGN.md). 409 NEXT STEPS: EMERGENCY_RESCHEDULE_PLAN_DRIFTED — the schedule changed between your preview and this commit (another booking/move won a lane): call /preview again, show the fresh plan, then commit. EMERGENCY_RESCHEDULE_SLOT_OCCUPIED — landing window blocked by an immovable anchor (P0/crew/multi-day): another tech or time. Other codes — same remedies as /candidates.
+    # @param job_request_emergency_commit_request [JobRequestEmergencyCommitRequest] emergency insert spec
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key replays the original response (header Idempotent-Replayed: true) instead of re-running the operation. Reusing a key with a different body returns 422 IDEMPOTENCY_KEY_REUSE.
+    # @return [CommitEmergencyReschedule200Response]
+    def commit_emergency_reschedule(job_request_emergency_commit_request, opts = {})
+      data, _status_code, _headers = commit_emergency_reschedule_with_http_info(job_request_emergency_commit_request, opts)
+      data
+    end
+
+    # Commit emergency insert + cascade reschedule
+    # Applies the cascade previewed by /emergency/preview: assigns the emergency job to the technician and pushes the displaced jobs back (or, with &#x60;displacement_mode&#x3D;reassign&#x60;, re-staffs them onto their previewed alternates first), atomically. Supports Idempotency-Key. The server recomputes the plan under a lock and fences each job on its status_version — if anything changed since the preview it returns 409 EMERGENCY_RESCHEDULE_PLAN_DRIFTED (re-preview). Same body as preview + optional &#x60;emergency_expected_version&#x60;. Isolated feature (see EMERGENCY_RESCHEDULE_DESIGN.md). 409 NEXT STEPS: EMERGENCY_RESCHEDULE_PLAN_DRIFTED — the schedule changed between your preview and this commit (another booking/move won a lane): call /preview again, show the fresh plan, then commit. EMERGENCY_RESCHEDULE_SLOT_OCCUPIED — landing window blocked by an immovable anchor (P0/crew/multi-day): another tech or time. Other codes — same remedies as /candidates.
+    # @param job_request_emergency_commit_request [JobRequestEmergencyCommitRequest] emergency insert spec
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key replays the original response (header Idempotent-Replayed: true) instead of re-running the operation. Reusing a key with a different body returns 422 IDEMPOTENCY_KEY_REUSE.
+    # @return [Array<(CommitEmergencyReschedule200Response, Integer, Hash)>] CommitEmergencyReschedule200Response data, response status code and response headers
+    def commit_emergency_reschedule_with_http_info(job_request_emergency_commit_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: JobRequestBusinessApi.commit_emergency_reschedule ...'
+      end
+      # verify the required parameter 'job_request_emergency_commit_request' is set
+      if @api_client.config.client_side_validation && job_request_emergency_commit_request.nil?
+        fail ArgumentError, "Missing the required parameter 'job_request_emergency_commit_request' when calling JobRequestBusinessApi.commit_emergency_reschedule"
+      end
+      # resource path
+      local_var_path = '/job-requests/emergency/commit'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+      header_params[:'Idempotency-Key'] = opts[:'idempotency_key'] if !opts[:'idempotency_key'].nil?
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(job_request_emergency_commit_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'CommitEmergencyReschedule200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"JobRequestBusinessApi.commit_emergency_reschedule",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: JobRequestBusinessApi#commit_emergency_reschedule\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Commit a schedule-board job move
+    # Applies the move previewed by /move/preview: places the job on the technician at the new time and pushes the displaced jobs back, atomically (per-tech advisory lock; the server recomputes the plan and fences each job on its status_version — drift since the preview returns 409 SCHEDULE_MOVE_PLAN_DRIFTED, re-preview). Same body as preview + optional `expected_version`. See SCHEDULE_BOARD_DESIGN.md. 409 NEXT STEPS: SCHEDULE_MOVE_PLAN_DRIFTED — the schedule changed since your preview (or expected_move_ids no longer match): re-preview, show the fresh plan, commit again. All other codes — same remedies as /move/preview.
+    # @param id [String] Job request ID (UUID or short_code)
+    # @param job_request_move_commit_req [JobRequestMoveCommitReq] move spec
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key replays the original response (header Idempotent-Replayed: true) instead of re-running the operation. Reusing a key with a different body returns 422 IDEMPOTENCY_KEY_REUSE.
+    # @return [CommitJobRequestMove200Response]
+    def commit_job_request_move(id, job_request_move_commit_req, opts = {})
+      data, _status_code, _headers = commit_job_request_move_with_http_info(id, job_request_move_commit_req, opts)
+      data
+    end
+
+    # Commit a schedule-board job move
+    # Applies the move previewed by /move/preview: places the job on the technician at the new time and pushes the displaced jobs back, atomically (per-tech advisory lock; the server recomputes the plan and fences each job on its status_version — drift since the preview returns 409 SCHEDULE_MOVE_PLAN_DRIFTED, re-preview). Same body as preview + optional &#x60;expected_version&#x60;. See SCHEDULE_BOARD_DESIGN.md. 409 NEXT STEPS: SCHEDULE_MOVE_PLAN_DRIFTED — the schedule changed since your preview (or expected_move_ids no longer match): re-preview, show the fresh plan, commit again. All other codes — same remedies as /move/preview.
+    # @param id [String] Job request ID (UUID or short_code)
+    # @param job_request_move_commit_req [JobRequestMoveCommitReq] move spec
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key replays the original response (header Idempotent-Replayed: true) instead of re-running the operation. Reusing a key with a different body returns 422 IDEMPOTENCY_KEY_REUSE.
+    # @return [Array<(CommitJobRequestMove200Response, Integer, Hash)>] CommitJobRequestMove200Response data, response status code and response headers
+    def commit_job_request_move_with_http_info(id, job_request_move_commit_req, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: JobRequestBusinessApi.commit_job_request_move ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling JobRequestBusinessApi.commit_job_request_move"
+      end
+      # verify the required parameter 'job_request_move_commit_req' is set
+      if @api_client.config.client_side_validation && job_request_move_commit_req.nil?
+        fail ArgumentError, "Missing the required parameter 'job_request_move_commit_req' when calling JobRequestBusinessApi.commit_job_request_move"
+      end
+      # resource path
+      local_var_path = '/job-requests/{id}/move/commit'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+      header_params[:'Idempotency-Key'] = opts[:'idempotency_key'] if !opts[:'idempotency_key'].nil?
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(job_request_move_commit_req)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'CommitJobRequestMove200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"JobRequestBusinessApi.commit_job_request_move",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: JobRequestBusinessApi#commit_job_request_move\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Confirm a booking on behalf of the customer
+    # Fires the customer-actor `confirm_booking` action from the BUSINESS surface (audited as business_on_behalf). Two uses: (1) LIVE — staff confirm a slot for a customer who booked by phone; (2) SANDBOX — the customer magic-token surface is live-only (a sandbox job's link can never reach a real customer), so this is the ONLY way to drive a sandbox test job past booking (book → quote → confirm → assign → complete). Body carries the customer-chosen scheduled_at (business-local naive datetime). DECISION TABLE — every 409 this endpoint returns, and the correct NEXT STEP (branch on error_code, never on the HTTP status): • JOB_REQUEST_STAGE_CONFLICT — the job changed since you read it (NOTE: every FAILED confirm attempt also bumps status_version by design). Next: re-GET the job, retry with the fresh status_version. • JOB_REQUEST_ACTION_NOT_PENDING — the job is no longer at the confirm step (usually: already confirmed). Next: re-GET and show current status; do not retry. • JOB_REQUEST_NO_TECHNICIAN_AVAILABLE — the TIME is infeasible for everyone (outside working hours / the customer window, or nobody qualifies). Next: pick another time via booking-windows / time-segments. NOT an emergency case — displacement cannot conjure capacity. • JOB_REQUEST_TECH_INFEASIBLE — the FORCED technician can never take the job then; `data.reason` says why: cannot_arrive_in_time (commute/shift-start — `data.earliest_feasible_at` (RFC3339 UTC) is the first same-day time they CAN be on site → offer it) | missing_required_skills | not_available_today | not_lead_tier. Next: keep the tech and reschedule to earliest_feasible_at+, OR keep the time and drop technician_id (auto-pick) / choose another tech from time-segments. NOT an emergency case. • JOB_REQUEST_P0_REQUIRES_DISPLACEMENT — the ONLY code that routes to the EMERGENCY flow: the job is P0, the tech qualifies, but the lane is genuinely occupied. Next: POST emergency/candidates → preview → commit (the commit auto-confirms). Caveat: if the occupying jobs are themselves P0 the preview will reject with EMERGENCY_RESCHEDULE_SLOT_OCCUPIED (P0 never displaces P0) — then pick another tech/time.
+    # @param id [String] Job request ID
+    # @param job_request_confirm_request [JobRequestConfirmRequest] Chosen slot (scheduled_at) + optional technician_id force-assign (P0–P3 flow: pins the ranked candidate, feasibility still enforced)
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key replays the original response (header Idempotent-Replayed: true) instead of re-running the operation. Reusing a key with a different body returns 422 IDEMPOTENCY_KEY_REUSE.
+    # @return [ResponseEnvelope]
+    def confirm_job_request(id, job_request_confirm_request, opts = {})
+      data, _status_code, _headers = confirm_job_request_with_http_info(id, job_request_confirm_request, opts)
+      data
+    end
+
+    # Confirm a booking on behalf of the customer
+    # Fires the customer-actor &#x60;confirm_booking&#x60; action from the BUSINESS surface (audited as business_on_behalf). Two uses: (1) LIVE — staff confirm a slot for a customer who booked by phone; (2) SANDBOX — the customer magic-token surface is live-only (a sandbox job&#39;s link can never reach a real customer), so this is the ONLY way to drive a sandbox test job past booking (book → quote → confirm → assign → complete). Body carries the customer-chosen scheduled_at (business-local naive datetime). DECISION TABLE — every 409 this endpoint returns, and the correct NEXT STEP (branch on error_code, never on the HTTP status): • JOB_REQUEST_STAGE_CONFLICT — the job changed since you read it (NOTE: every FAILED confirm attempt also bumps status_version by design). Next: re-GET the job, retry with the fresh status_version. • JOB_REQUEST_ACTION_NOT_PENDING — the job is no longer at the confirm step (usually: already confirmed). Next: re-GET and show current status; do not retry. • JOB_REQUEST_NO_TECHNICIAN_AVAILABLE — the TIME is infeasible for everyone (outside working hours / the customer window, or nobody qualifies). Next: pick another time via booking-windows / time-segments. NOT an emergency case — displacement cannot conjure capacity. • JOB_REQUEST_TECH_INFEASIBLE — the FORCED technician can never take the job then; &#x60;data.reason&#x60; says why: cannot_arrive_in_time (commute/shift-start — &#x60;data.earliest_feasible_at&#x60; (RFC3339 UTC) is the first same-day time they CAN be on site → offer it) | missing_required_skills | not_available_today | not_lead_tier. Next: keep the tech and reschedule to earliest_feasible_at+, OR keep the time and drop technician_id (auto-pick) / choose another tech from time-segments. NOT an emergency case. • JOB_REQUEST_P0_REQUIRES_DISPLACEMENT — the ONLY code that routes to the EMERGENCY flow: the job is P0, the tech qualifies, but the lane is genuinely occupied. Next: POST emergency/candidates → preview → commit (the commit auto-confirms). Caveat: if the occupying jobs are themselves P0 the preview will reject with EMERGENCY_RESCHEDULE_SLOT_OCCUPIED (P0 never displaces P0) — then pick another tech/time.
+    # @param id [String] Job request ID
+    # @param job_request_confirm_request [JobRequestConfirmRequest] Chosen slot (scheduled_at) + optional technician_id force-assign (P0–P3 flow: pins the ranked candidate, feasibility still enforced)
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key replays the original response (header Idempotent-Replayed: true) instead of re-running the operation. Reusing a key with a different body returns 422 IDEMPOTENCY_KEY_REUSE.
+    # @return [Array<(ResponseEnvelope, Integer, Hash)>] ResponseEnvelope data, response status code and response headers
+    def confirm_job_request_with_http_info(id, job_request_confirm_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: JobRequestBusinessApi.confirm_job_request ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling JobRequestBusinessApi.confirm_job_request"
+      end
+      # verify the required parameter 'job_request_confirm_request' is set
+      if @api_client.config.client_side_validation && job_request_confirm_request.nil?
+        fail ArgumentError, "Missing the required parameter 'job_request_confirm_request' when calling JobRequestBusinessApi.confirm_job_request"
+      end
+      # resource path
+      local_var_path = '/job-requests/{id}/confirm'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+      header_params[:'Idempotency-Key'] = opts[:'idempotency_key'] if !opts[:'idempotency_key'].nil?
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(job_request_confirm_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ResponseEnvelope'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"JobRequestBusinessApi.confirm_job_request",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: JobRequestBusinessApi#confirm_job_request\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Create a job request
+    # Books a field-service job — the work order that enters the dispatch & scheduling pipeline. Send the customer's UUID plus requested `job_dates` (date + morning/afternoon/evening periods, ideally offered from GET /job-requests/booking-windows), optional `job_type_id` (service catalog), `skill_ids` (required technician qualifications) and a free-text description. Quoting, technician/crew assignment and completion then advance the work order through the business's workflow.
     # @param job_request_create_request [JobRequestCreateRequest] Booking payload
     # @param [Hash] opts the optional parameters
     # @option opts [String] :x_timezone Customer IANA timezone
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key returns the original booking instead of creating a duplicate
     # @return [CreateJobRequest200Response]
     def create_job_request(job_request_create_request, opts = {})
       data, _status_code, _headers = create_job_request_with_http_info(job_request_create_request, opts)
       data
     end
 
-    # Create a job request (business actor)
+    # Create a job request
+    # Books a field-service job — the work order that enters the dispatch &amp; scheduling pipeline. Send the customer&#39;s UUID plus requested &#x60;job_dates&#x60; (date + morning/afternoon/evening periods, ideally offered from GET /job-requests/booking-windows), optional &#x60;job_type_id&#x60; (service catalog), &#x60;skill_ids&#x60; (required technician qualifications) and a free-text description. Quoting, technician/crew assignment and completion then advance the work order through the business&#39;s workflow.
     # @param job_request_create_request [JobRequestCreateRequest] Booking payload
     # @param [Hash] opts the optional parameters
     # @option opts [String] :x_timezone Customer IANA timezone
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key returns the original booking instead of creating a duplicate
     # @return [Array<(CreateJobRequest200Response, Integer, Hash)>] CreateJobRequest200Response data, response status code and response headers
     def create_job_request_with_http_info(job_request_create_request, opts = {})
       if @api_client.config.debugging
@@ -58,6 +287,7 @@ module Crisphive
           header_params['Content-Type'] = content_type
       end
       header_params[:'X-Timezone'] = opts[:'x_timezone'] if !opts[:'x_timezone'].nil?
+      header_params[:'Idempotency-Key'] = opts[:'idempotency_key'] if !opts[:'idempotency_key'].nil?
 
       # form parameters
       form_params = opts[:form_params] || {}
@@ -89,6 +319,7 @@ module Crisphive
     end
 
     # Get a job request
+    # Returns the full work order: current workflow status, quoted duration, confirmed schedule, customer contact snapshot and the assigned technician / crew — everything a dispatcher or an external field-service system needs to track one job.
     # @param id [String] Job request ID (UUID or short_code)
     # @param [Hash] opts the optional parameters
     # @return [GetJobRequest200Response]
@@ -98,6 +329,7 @@ module Crisphive
     end
 
     # Get a job request
+    # Returns the full work order: current workflow status, quoted duration, confirmed schedule, customer contact snapshot and the assigned technician / crew — everything a dispatcher or an external field-service system needs to track one job.
     # @param id [String] Job request ID (UUID or short_code)
     # @param [Hash] opts the optional parameters
     # @return [Array<(GetJobRequest200Response, Integer, Hash)>] GetJobRequest200Response data, response status code and response headers
@@ -149,8 +381,8 @@ module Crisphive
       return data, status_code, headers
     end
 
-    # Job timeline (business surface — also serves tech via BusinessAuth)
-    # Per-status events[] composed from workflow snapshot + scattered typed cols + action_audit. FE renders as the Job Timeline panel (completed step = filled check, current = outline ring, upcoming = empty). entered_at nil for upcoming steps + older jobs missing the typed-col backfill.
+    # Job timeline
+    # Per-status progress of a job's lifecycle (e.g. booked → confirmed → on the way → arrived → completed, following the business's configured workflow) — render it as a job-tracking timeline. Each status carries its state (completed | current | upcoming), when the job entered it, and the actions fired within it. entered_at may be null for upcoming steps and for older jobs predating the backfill.
     # @param id [String] Job request ID (UUID or short_code)
     # @param [Hash] opts the optional parameters
     # @return [GetJobRequestTimeline200Response]
@@ -159,8 +391,8 @@ module Crisphive
       data
     end
 
-    # Job timeline (business surface — also serves tech via BusinessAuth)
-    # Per-status events[] composed from workflow snapshot + scattered typed cols + action_audit. FE renders as the Job Timeline panel (completed step &#x3D; filled check, current &#x3D; outline ring, upcoming &#x3D; empty). entered_at nil for upcoming steps + older jobs missing the typed-col backfill.
+    # Job timeline
+    # Per-status progress of a job&#39;s lifecycle (e.g. booked → confirmed → on the way → arrived → completed, following the business&#39;s configured workflow) — render it as a job-tracking timeline. Each status carries its state (completed | current | upcoming), when the job entered it, and the actions fired within it. entered_at may be null for upcoming steps and for older jobs predating the backfill.
     # @param id [String] Job request ID (UUID or short_code)
     # @param [Hash] opts the optional parameters
     # @return [Array<(GetJobRequestTimeline200Response, Integer, Hash)>] GetJobRequestTimeline200Response data, response status code and response headers
@@ -212,7 +444,217 @@ module Crisphive
       return data, status_code, headers
     end
 
-    # Booking availability (business actor)
+    # One technician's real schedule (sessions + time off)
+    # The technician's ACTUAL occupancy over a date range: every job session on their lane (solo/lead and crew) plus approved time-off blocks. Weekly recurring working hours come from the technician-availability endpoints — combine both for the full availability picture (\"get crew availability\"). from/to are business-local dates (YYYY-MM-DD, inclusive); omitted = today .. +7 days; range max 31 days.
+    # @param id [String] Technician ID
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :from Start date (YYYY-MM-DD, business-local; default today)
+    # @option opts [String] :to End date (YYYY-MM-DD, inclusive; default from+7d; max range 31 days)
+    # @return [GetTechnicianSchedule200Response]
+    def get_technician_schedule(id, opts = {})
+      data, _status_code, _headers = get_technician_schedule_with_http_info(id, opts)
+      data
+    end
+
+    # One technician&#39;s real schedule (sessions + time off)
+    # The technician&#39;s ACTUAL occupancy over a date range: every job session on their lane (solo/lead and crew) plus approved time-off blocks. Weekly recurring working hours come from the technician-availability endpoints — combine both for the full availability picture (\&quot;get crew availability\&quot;). from/to are business-local dates (YYYY-MM-DD, inclusive); omitted &#x3D; today .. +7 days; range max 31 days.
+    # @param id [String] Technician ID
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :from Start date (YYYY-MM-DD, business-local; default today)
+    # @option opts [String] :to End date (YYYY-MM-DD, inclusive; default from+7d; max range 31 days)
+    # @return [Array<(GetTechnicianSchedule200Response, Integer, Hash)>] GetTechnicianSchedule200Response data, response status code and response headers
+    def get_technician_schedule_with_http_info(id, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: JobRequestBusinessApi.get_technician_schedule ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling JobRequestBusinessApi.get_technician_schedule"
+      end
+      # resource path
+      local_var_path = '/technicians/{id}/schedule'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+      query_params[:'from'] = opts[:'from'] if !opts[:'from'].nil?
+      query_params[:'to'] = opts[:'to'] if !opts[:'to'].nil?
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'GetTechnicianSchedule200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"JobRequestBusinessApi.get_technician_schedule",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: JobRequestBusinessApi#get_technician_schedule\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Matching crew candidates for a job
+    # Technicians who can actually take this job, matched and ranked by the smart-assignment engine — skills per crew slot, weekly availability, existing schedule, time off and travel are all checked; each candidate carries a score breakdown (distance, travel, matched skills) plus the exact on-site session plan they would work. NOT a raw roster list (use GET /technicians for that). Returns the ranked feasible LEAD pool by default; pass include_buddies=true to also return per-slot buddy pools, include_vehicle=true to include the available-vehicle list. force_lead_id checks one specific technician: returns only that lead (with their crew combo) if feasible, else 409 JOB_REQUEST_NO_TECHNICIAN_AVAILABLE.
+    # @param id [String] Job request ID or short_code
+    # @param [Hash] opts the optional parameters
+    # @option opts [Boolean] :include_buddies Also return buddy candidate pools
+    # @option opts [Boolean] :include_vehicle Also return the available-vehicle list
+    # @option opts [String] :force_lead_id Check a specific technician as lead — returns only that lead if feasible, else 409
+    # @return [ListCrewCandidates200Response]
+    def list_crew_candidates(id, opts = {})
+      data, _status_code, _headers = list_crew_candidates_with_http_info(id, opts)
+      data
+    end
+
+    # Matching crew candidates for a job
+    # Technicians who can actually take this job, matched and ranked by the smart-assignment engine — skills per crew slot, weekly availability, existing schedule, time off and travel are all checked; each candidate carries a score breakdown (distance, travel, matched skills) plus the exact on-site session plan they would work. NOT a raw roster list (use GET /technicians for that). Returns the ranked feasible LEAD pool by default; pass include_buddies&#x3D;true to also return per-slot buddy pools, include_vehicle&#x3D;true to include the available-vehicle list. force_lead_id checks one specific technician: returns only that lead (with their crew combo) if feasible, else 409 JOB_REQUEST_NO_TECHNICIAN_AVAILABLE.
+    # @param id [String] Job request ID or short_code
+    # @param [Hash] opts the optional parameters
+    # @option opts [Boolean] :include_buddies Also return buddy candidate pools
+    # @option opts [Boolean] :include_vehicle Also return the available-vehicle list
+    # @option opts [String] :force_lead_id Check a specific technician as lead — returns only that lead if feasible, else 409
+    # @return [Array<(ListCrewCandidates200Response, Integer, Hash)>] ListCrewCandidates200Response data, response status code and response headers
+    def list_crew_candidates_with_http_info(id, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: JobRequestBusinessApi.list_crew_candidates ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling JobRequestBusinessApi.list_crew_candidates"
+      end
+      # resource path
+      local_var_path = '/job-requests/{id}/crew-candidates'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+      query_params[:'include_buddies'] = opts[:'include_buddies'] if !opts[:'include_buddies'].nil?
+      query_params[:'include_vehicle'] = opts[:'include_vehicle'] if !opts[:'include_vehicle'].nil?
+      query_params[:'force_lead_id'] = opts[:'force_lead_id'] if !opts[:'force_lead_id'].nil?
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ListCrewCandidates200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"JobRequestBusinessApi.list_crew_candidates",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: JobRequestBusinessApi#list_crew_candidates\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Rank technicians for a P0 emergency insert
+    # Returns the technicians who could take the emergency job at the requested start, ranked FASTEST-ARRIVAL first (arrival beats route efficiency for a P0). The response also carries a historical `crew_recommendation` (median crew size on comparable completed jobs + mandatory disclaimer — AC-2). Booked technicians are still candidates — each entry carries the displacement preview (which lower-priority jobs would be pushed, per day) that committing to them would cause; total_moves=0 means a free slot. P0 jobs are never displaced; P1 only by a P0. ETA is estimated from the technician's start location (no live GPS). Feed the chosen technician_id into emergency/preview + emergency/commit. 409 NEXT STEPS: EMERGENCY_RESCHEDULE_NOT_ELIGIBLE — the job cannot be emergency-inserted (not P0, already started/completed/archived, or not quoted): fix the job state or use a normal confirm. EMERGENCY_RESCHEDULE_CREW_UNSUPPORTED — crew jobs cannot use the emergency flow (v1): staff via confirm/reassign instead. EMERGENCY_RESCHEDULE_MULTIDAY_UNSUPPORTED — a confirmed multi-day job cannot be re-inserted (v1): use the normal reassign flow. EMERGENCY_RESCHEDULE_NO_WORKING_DAY — the chosen date has no working hours: pick a working day. EMERGENCY_RESCHEDULE_IN_PAST — start time already passed: pick a future time.
+    # @param job_request_emergency_candidates_request [JobRequestEmergencyCandidatesRequest] Emergency job + desired start
+    # @param [Hash] opts the optional parameters
+    # @return [ListEmergencyCandidates200Response]
+    def list_emergency_candidates(job_request_emergency_candidates_request, opts = {})
+      data, _status_code, _headers = list_emergency_candidates_with_http_info(job_request_emergency_candidates_request, opts)
+      data
+    end
+
+    # Rank technicians for a P0 emergency insert
+    # Returns the technicians who could take the emergency job at the requested start, ranked FASTEST-ARRIVAL first (arrival beats route efficiency for a P0). The response also carries a historical &#x60;crew_recommendation&#x60; (median crew size on comparable completed jobs + mandatory disclaimer — AC-2). Booked technicians are still candidates — each entry carries the displacement preview (which lower-priority jobs would be pushed, per day) that committing to them would cause; total_moves&#x3D;0 means a free slot. P0 jobs are never displaced; P1 only by a P0. ETA is estimated from the technician&#39;s start location (no live GPS). Feed the chosen technician_id into emergency/preview + emergency/commit. 409 NEXT STEPS: EMERGENCY_RESCHEDULE_NOT_ELIGIBLE — the job cannot be emergency-inserted (not P0, already started/completed/archived, or not quoted): fix the job state or use a normal confirm. EMERGENCY_RESCHEDULE_CREW_UNSUPPORTED — crew jobs cannot use the emergency flow (v1): staff via confirm/reassign instead. EMERGENCY_RESCHEDULE_MULTIDAY_UNSUPPORTED — a confirmed multi-day job cannot be re-inserted (v1): use the normal reassign flow. EMERGENCY_RESCHEDULE_NO_WORKING_DAY — the chosen date has no working hours: pick a working day. EMERGENCY_RESCHEDULE_IN_PAST — start time already passed: pick a future time.
+    # @param job_request_emergency_candidates_request [JobRequestEmergencyCandidatesRequest] Emergency job + desired start
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(ListEmergencyCandidates200Response, Integer, Hash)>] ListEmergencyCandidates200Response data, response status code and response headers
+    def list_emergency_candidates_with_http_info(job_request_emergency_candidates_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: JobRequestBusinessApi.list_emergency_candidates ...'
+      end
+      # verify the required parameter 'job_request_emergency_candidates_request' is set
+      if @api_client.config.client_side_validation && job_request_emergency_candidates_request.nil?
+        fail ArgumentError, "Missing the required parameter 'job_request_emergency_candidates_request' when calling JobRequestBusinessApi.list_emergency_candidates"
+      end
+      # resource path
+      local_var_path = '/job-requests/emergency/candidates'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(job_request_emergency_candidates_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ListEmergencyCandidates200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"JobRequestBusinessApi.list_emergency_candidates",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: JobRequestBusinessApi#list_emergency_candidates\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Booking availability
+    # Real-time appointment availability from the scheduling engine: returns the bookable date + time-period windows given technician capacity, working hours and service-territory coverage. Call this before creating a job request and offer the customer ONLY the returned windows — it prevents unschedulable bookings.
     # @param x_timezone [String] Customer IANA timezone
     # @param [Hash] opts the optional parameters
     # @option opts [String] :from Start YYYY-MM-DD
@@ -223,7 +665,8 @@ module Crisphive
       data
     end
 
-    # Booking availability (business actor)
+    # Booking availability
+    # Real-time appointment availability from the scheduling engine: returns the bookable date + time-period windows given technician capacity, working hours and service-territory coverage. Call this before creating a job request and offer the customer ONLY the returned windows — it prevents unschedulable bookings.
     # @param x_timezone [String] Customer IANA timezone
     # @param [Hash] opts the optional parameters
     # @option opts [String] :from Start YYYY-MM-DD
@@ -281,14 +724,14 @@ module Crisphive
     end
 
     # Poll for new & changed job requests (sync feed)
-    # Keep your own copy of bookings in sync WITHOUT re-listing everything: returns the job requests whose state changed (created, status transition, reschedule, soft-delete/archive) at or after the `since` cursor, ordered oldest-change-first (updated_at ASC).  How to use it: (1) On your first poll OMIT `since` — the server primes the cursor at \"now\", returns no items and a `next_since`. (2) Store `next_since` and pass it as `since` on the next poll. (3) Apply each returned item to your store by UPSERTING on `id` (the server re-scans a ~5s safety window, so the same job may appear again — never blindly append). (4) If `has_more` is true the page filled to `limit` and more changes are already waiting — poll again immediately; otherwise wait your normal interval (e.g. 5–15s).  This is NOT pagination — it is a time-keyed change feed. Use the paginated GET /job-requests for the initial bulk load, then this endpoint to stay live. Filters (status_keys, customer_id, …) narrow the feed to the slice you care about.
+    # Keep an external system (your CRM, ERP or field-service tool) in sync with bookings WITHOUT re-listing everything: returns the job requests (work orders) whose state changed (created, status transition, reschedule, soft-delete/archive) at or after the `since` cursor, ordered oldest-change-first (updated_at ASC).  How to use it: (1) On your first poll OMIT `since` — the server primes the cursor at \"now\", returns no items and a `next_since`. (2) Store `next_since` and pass it as `since` on the next poll. (3) Apply each returned item to your store by UPSERTING on `id` (the server re-scans a ~5s safety window, so the same job may appear again — never blindly append). (4) If `has_more` is true the page filled to `limit` and more changes are already waiting — poll again immediately; otherwise wait your normal interval (e.g. 5–15s).  This is NOT pagination — it is a time-keyed change feed. Use the paginated GET /job-requests for the initial bulk load, then this endpoint to stay live. Filters (status_keys, customer_id, …) narrow the feed to the slice you care about.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :status_keys Comma-separated status slugs — only surface changes to jobs in these statuses
-    # @option opts [String] :priority Priority filter (normal|emergency)
+    # @option opts [String] :priority Priority filter (p0|p1|p2|p3)
     # @option opts [String] :customer_id Only changes to this customer&#39;s jobs (UUID)
     # @option opts [String] :technician_id Only changes to jobs assigned to this technician (UUID)
-    # @option opts [String] :scheduled_from Filter from (YYYY-MM-DD or RFC3339); range is [from, to)
-    # @option opts [String] :scheduled_to Filter to (YYYY-MM-DD or RFC3339), exclusive
+    # @option opts [String] :scheduled_from Filter from (YYYY-MM-DD &#x3D; start of that day in the business timezone, or RFC3339); range is [from, to)
+    # @option opts [String] :scheduled_to Filter to (YYYY-MM-DD &#x3D; end of that day in the business timezone, or RFC3339), exclusive
     # @option opts [String] :since RFC3339 cursor from the prior response&#39;s next_since. OMIT on the first poll to prime the cursor at server-now.
     # @option opts [Integer] :limit Max changes per poll (default 15, max 1000). If the page fills, has_more&#x3D;true.
     # @return [ListJobRequestChanges200Response]
@@ -298,14 +741,14 @@ module Crisphive
     end
 
     # Poll for new &amp; changed job requests (sync feed)
-    # Keep your own copy of bookings in sync WITHOUT re-listing everything: returns the job requests whose state changed (created, status transition, reschedule, soft-delete/archive) at or after the &#x60;since&#x60; cursor, ordered oldest-change-first (updated_at ASC).  How to use it: (1) On your first poll OMIT &#x60;since&#x60; — the server primes the cursor at \&quot;now\&quot;, returns no items and a &#x60;next_since&#x60;. (2) Store &#x60;next_since&#x60; and pass it as &#x60;since&#x60; on the next poll. (3) Apply each returned item to your store by UPSERTING on &#x60;id&#x60; (the server re-scans a ~5s safety window, so the same job may appear again — never blindly append). (4) If &#x60;has_more&#x60; is true the page filled to &#x60;limit&#x60; and more changes are already waiting — poll again immediately; otherwise wait your normal interval (e.g. 5–15s).  This is NOT pagination — it is a time-keyed change feed. Use the paginated GET /job-requests for the initial bulk load, then this endpoint to stay live. Filters (status_keys, customer_id, …) narrow the feed to the slice you care about.
+    # Keep an external system (your CRM, ERP or field-service tool) in sync with bookings WITHOUT re-listing everything: returns the job requests (work orders) whose state changed (created, status transition, reschedule, soft-delete/archive) at or after the &#x60;since&#x60; cursor, ordered oldest-change-first (updated_at ASC).  How to use it: (1) On your first poll OMIT &#x60;since&#x60; — the server primes the cursor at \&quot;now\&quot;, returns no items and a &#x60;next_since&#x60;. (2) Store &#x60;next_since&#x60; and pass it as &#x60;since&#x60; on the next poll. (3) Apply each returned item to your store by UPSERTING on &#x60;id&#x60; (the server re-scans a ~5s safety window, so the same job may appear again — never blindly append). (4) If &#x60;has_more&#x60; is true the page filled to &#x60;limit&#x60; and more changes are already waiting — poll again immediately; otherwise wait your normal interval (e.g. 5–15s).  This is NOT pagination — it is a time-keyed change feed. Use the paginated GET /job-requests for the initial bulk load, then this endpoint to stay live. Filters (status_keys, customer_id, …) narrow the feed to the slice you care about.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :status_keys Comma-separated status slugs — only surface changes to jobs in these statuses
-    # @option opts [String] :priority Priority filter (normal|emergency)
+    # @option opts [String] :priority Priority filter (p0|p1|p2|p3)
     # @option opts [String] :customer_id Only changes to this customer&#39;s jobs (UUID)
     # @option opts [String] :technician_id Only changes to jobs assigned to this technician (UUID)
-    # @option opts [String] :scheduled_from Filter from (YYYY-MM-DD or RFC3339); range is [from, to)
-    # @option opts [String] :scheduled_to Filter to (YYYY-MM-DD or RFC3339), exclusive
+    # @option opts [String] :scheduled_from Filter from (YYYY-MM-DD &#x3D; start of that day in the business timezone, or RFC3339); range is [from, to)
+    # @option opts [String] :scheduled_to Filter to (YYYY-MM-DD &#x3D; end of that day in the business timezone, or RFC3339), exclusive
     # @option opts [String] :since RFC3339 cursor from the prior response&#39;s next_since. OMIT on the first poll to prime the cursor at server-now.
     # @option opts [Integer] :limit Max changes per poll (default 15, max 1000). If the page fills, has_more&#x3D;true.
     # @return [Array<(ListJobRequestChanges200Response, Integer, Hash)>] ListJobRequestChanges200Response data, response status code and response headers
@@ -362,15 +805,18 @@ module Crisphive
     end
 
     # List job requests
+    # Paginated list of the business's bookings (work orders) with dispatch-oriented filters: workflow status, customer, assigned technician, scheduled date range and free-text search over code/description. This is also the SCHEDULE query: combine technician_id + scheduled_from/scheduled_to to read one technician's agenda for a day or week (e.g. \"what is Alex doing tomorrow\"), or just the date range for the whole team's calendar.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :status_keys Comma-separated status slugs
     # @option opts [String] :status active (default) | archived | all
+    # @option opts [String] :priority Priority filter (p0|p1|p2|p3)
     # @option opts [String] :customer_id Customer UUID
     # @option opts [String] :technician_id Technician UUID
-    # @option opts [String] :scheduled_from Filter from (YYYY-MM-DD or RFC3339); range is [from, to)
-    # @option opts [String] :scheduled_to Filter to (YYYY-MM-DD or RFC3339), exclusive
+    # @option opts [String] :service_area_id Service-area UUID (board zone filter)
+    # @option opts [String] :scheduled_from Filter from (YYYY-MM-DD &#x3D; start of that day in the business timezone, or RFC3339); range is [from, to)
+    # @option opts [String] :scheduled_to Filter to (YYYY-MM-DD &#x3D; end of that day in the business timezone, or RFC3339), exclusive
     # @option opts [String] :q Search short_code or description (case-insensitive, partial match)
-    # @option opts [String] :sort Sort key
+    # @option opts [String] :sort Sort key: created_at:desc (default) | created_at:asc | scheduled_at:asc | scheduled_at:desc | priority:asc (P0 first) | priority:desc
     # @option opts [Integer] :page Page number
     # @option opts [Integer] :limit Page size
     # @return [ListJobRequests200Response]
@@ -380,15 +826,18 @@ module Crisphive
     end
 
     # List job requests
+    # Paginated list of the business&#39;s bookings (work orders) with dispatch-oriented filters: workflow status, customer, assigned technician, scheduled date range and free-text search over code/description. This is also the SCHEDULE query: combine technician_id + scheduled_from/scheduled_to to read one technician&#39;s agenda for a day or week (e.g. \&quot;what is Alex doing tomorrow\&quot;), or just the date range for the whole team&#39;s calendar.
     # @param [Hash] opts the optional parameters
     # @option opts [String] :status_keys Comma-separated status slugs
     # @option opts [String] :status active (default) | archived | all
+    # @option opts [String] :priority Priority filter (p0|p1|p2|p3)
     # @option opts [String] :customer_id Customer UUID
     # @option opts [String] :technician_id Technician UUID
-    # @option opts [String] :scheduled_from Filter from (YYYY-MM-DD or RFC3339); range is [from, to)
-    # @option opts [String] :scheduled_to Filter to (YYYY-MM-DD or RFC3339), exclusive
+    # @option opts [String] :service_area_id Service-area UUID (board zone filter)
+    # @option opts [String] :scheduled_from Filter from (YYYY-MM-DD &#x3D; start of that day in the business timezone, or RFC3339); range is [from, to)
+    # @option opts [String] :scheduled_to Filter to (YYYY-MM-DD &#x3D; end of that day in the business timezone, or RFC3339), exclusive
     # @option opts [String] :q Search short_code or description (case-insensitive, partial match)
-    # @option opts [String] :sort Sort key
+    # @option opts [String] :sort Sort key: created_at:desc (default) | created_at:asc | scheduled_at:asc | scheduled_at:desc | priority:asc (P0 first) | priority:desc
     # @option opts [Integer] :page Page number
     # @option opts [Integer] :limit Page size
     # @return [Array<(ListJobRequests200Response, Integer, Hash)>] ListJobRequests200Response data, response status code and response headers
@@ -403,8 +852,10 @@ module Crisphive
       query_params = opts[:query_params] || {}
       query_params[:'status_keys'] = opts[:'status_keys'] if !opts[:'status_keys'].nil?
       query_params[:'status'] = opts[:'status'] if !opts[:'status'].nil?
+      query_params[:'priority'] = opts[:'priority'] if !opts[:'priority'].nil?
       query_params[:'customer_id'] = opts[:'customer_id'] if !opts[:'customer_id'].nil?
       query_params[:'technician_id'] = opts[:'technician_id'] if !opts[:'technician_id'].nil?
+      query_params[:'service_area_id'] = opts[:'service_area_id'] if !opts[:'service_area_id'].nil?
       query_params[:'scheduled_from'] = opts[:'scheduled_from'] if !opts[:'scheduled_from'].nil?
       query_params[:'scheduled_to'] = opts[:'scheduled_to'] if !opts[:'scheduled_to'].nil?
       query_params[:'q'] = opts[:'q'] if !opts[:'q'].nil?
@@ -442,6 +893,445 @@ module Crisphive
       data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
       if @api_client.config.debugging
         @api_client.config.logger.debug "API called: JobRequestBusinessApi#list_job_requests\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Matching time slots for a quoted job
+    # Bookable arrival-window slots for a quoted job, computed by the smart-assignment matching engine: each slot lists the technicians actually available to start then (skills, weekly availability, existing schedule, time off and travel all checked), with a per-technician match score. Use it to find and offer appointment times an agent or integration can then confirm (POST /job-requests/{id}/confirm with the slot's business_time.datetime). Same grid the end-customer's slot picker shows; slot width defaults to the business's arrival window — override via ?step_minutes (5–240). The job must be quoted first (the quote sets the visit duration the matcher schedules).
+    # @param id [String] Job request ID (UUID or short_code)
+    # @param [Hash] opts the optional parameters
+    # @option opts [Integer] :step_minutes Slot step in minutes (default: business arrival window, 5–240)
+    # @return [ListMatchingSlots200Response]
+    def list_matching_slots(id, opts = {})
+      data, _status_code, _headers = list_matching_slots_with_http_info(id, opts)
+      data
+    end
+
+    # Matching time slots for a quoted job
+    # Bookable arrival-window slots for a quoted job, computed by the smart-assignment matching engine: each slot lists the technicians actually available to start then (skills, weekly availability, existing schedule, time off and travel all checked), with a per-technician match score. Use it to find and offer appointment times an agent or integration can then confirm (POST /job-requests/{id}/confirm with the slot&#39;s business_time.datetime). Same grid the end-customer&#39;s slot picker shows; slot width defaults to the business&#39;s arrival window — override via ?step_minutes (5–240). The job must be quoted first (the quote sets the visit duration the matcher schedules).
+    # @param id [String] Job request ID (UUID or short_code)
+    # @param [Hash] opts the optional parameters
+    # @option opts [Integer] :step_minutes Slot step in minutes (default: business arrival window, 5–240)
+    # @return [Array<(ListMatchingSlots200Response, Integer, Hash)>] ListMatchingSlots200Response data, response status code and response headers
+    def list_matching_slots_with_http_info(id, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: JobRequestBusinessApi.list_matching_slots ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling JobRequestBusinessApi.list_matching_slots"
+      end
+      # resource path
+      local_var_path = '/job-requests/{id}/time-segments'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+      query_params[:'step_minutes'] = opts[:'step_minutes'] if !opts[:'step_minutes'].nil?
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ListMatchingSlots200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"JobRequestBusinessApi.list_matching_slots",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: JobRequestBusinessApi#list_matching_slots\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Find nearby feasible technicians (job-less location query)
+    # Ranks who could serve a hypothetical visit at (lat,lng) starting `at` for `duration_minutes` — the engine applies the REAL hard filters (weekly hours, existing schedule, approved time-off, geographic service areas, optional skill floor) and returns candidates nearest-arrival first. ETA origin is each technician's start location (no live GPS). Use before creating a booking to propose realistic arrivals.
+    # @param lat [Float] Latitude of the service location
+    # @param lng [Float] Longitude of the service location
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :at Visit start (RFC3339, e.g. 2026-07-20T14:00:00Z; default now)
+    # @option opts [Integer] :duration_minutes Visit length in minutes (default 60; 15–480)
+    # @option opts [String] :skill_ids Comma-separated skill UUIDs to require/match
+    # @option opts [Integer] :limit Max candidates (default 10, max 20)
+    # @return [ListNearbyTechnicians200Response]
+    def list_nearby_technicians(lat, lng, opts = {})
+      data, _status_code, _headers = list_nearby_technicians_with_http_info(lat, lng, opts)
+      data
+    end
+
+    # Find nearby feasible technicians (job-less location query)
+    # Ranks who could serve a hypothetical visit at (lat,lng) starting &#x60;at&#x60; for &#x60;duration_minutes&#x60; — the engine applies the REAL hard filters (weekly hours, existing schedule, approved time-off, geographic service areas, optional skill floor) and returns candidates nearest-arrival first. ETA origin is each technician&#39;s start location (no live GPS). Use before creating a booking to propose realistic arrivals.
+    # @param lat [Float] Latitude of the service location
+    # @param lng [Float] Longitude of the service location
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :at Visit start (RFC3339, e.g. 2026-07-20T14:00:00Z; default now)
+    # @option opts [Integer] :duration_minutes Visit length in minutes (default 60; 15–480)
+    # @option opts [String] :skill_ids Comma-separated skill UUIDs to require/match
+    # @option opts [Integer] :limit Max candidates (default 10, max 20)
+    # @return [Array<(ListNearbyTechnicians200Response, Integer, Hash)>] ListNearbyTechnicians200Response data, response status code and response headers
+    def list_nearby_technicians_with_http_info(lat, lng, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: JobRequestBusinessApi.list_nearby_technicians ...'
+      end
+      # verify the required parameter 'lat' is set
+      if @api_client.config.client_side_validation && lat.nil?
+        fail ArgumentError, "Missing the required parameter 'lat' when calling JobRequestBusinessApi.list_nearby_technicians"
+      end
+      # verify the required parameter 'lng' is set
+      if @api_client.config.client_side_validation && lng.nil?
+        fail ArgumentError, "Missing the required parameter 'lng' when calling JobRequestBusinessApi.list_nearby_technicians"
+      end
+      # resource path
+      local_var_path = '/technicians/nearby'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+      query_params[:'lat'] = lat
+      query_params[:'lng'] = lng
+      query_params[:'at'] = opts[:'at'] if !opts[:'at'].nil?
+      query_params[:'duration_minutes'] = opts[:'duration_minutes'] if !opts[:'duration_minutes'].nil?
+      query_params[:'skill_ids'] = opts[:'skill_ids'] if !opts[:'skill_ids'].nil?
+      query_params[:'limit'] = opts[:'limit'] if !opts[:'limit'].nil?
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ListNearbyTechnicians200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"JobRequestBusinessApi.list_nearby_technicians",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: JobRequestBusinessApi#list_nearby_technicians\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Preview emergency insert + cascade reschedule
+    # Computes (WITHOUT writing) the cascade of inserting an emergency job onto a technician at a chosen time: where the emergency lands + every job pushed back, grouped per business-local day. `displacement_mode=reassign` instead hands each displaced job to another feasible technician at its ORIGINAL window (same-day promise) — jobs with no alternate capacity fall back to reschedule and stay in `days`. `mode=overtime` keeps everyone same-day (tech works late); `mode=next_day` rolls overflow to the next working day(s). Read-only — safe to call repeatedly; commit is a separate endpoint. Isolated feature (see EMERGENCY_RESCHEDULE_DESIGN.md). 409 NEXT STEPS: EMERGENCY_RESCHEDULE_SLOT_OCCUPIED — the landing window is blocked by a job the cascade may NOT move (another P0, a crew or multi-day job): choose another technician (walk the /candidates ranking) or another time; displacement never touches P0/crew/multi-day anchors. EMERGENCY_RESCHEDULE_NOT_ELIGIBLE / CREW_UNSUPPORTED / MULTIDAY_UNSUPPORTED / NO_WORKING_DAY / IN_PAST — same remedies as /candidates.
+    # @param job_request_emergency_preview_request [JobRequestEmergencyPreviewRequest] emergency insert spec
+    # @param [Hash] opts the optional parameters
+    # @return [CommitEmergencyReschedule200Response]
+    def preview_emergency_reschedule(job_request_emergency_preview_request, opts = {})
+      data, _status_code, _headers = preview_emergency_reschedule_with_http_info(job_request_emergency_preview_request, opts)
+      data
+    end
+
+    # Preview emergency insert + cascade reschedule
+    # Computes (WITHOUT writing) the cascade of inserting an emergency job onto a technician at a chosen time: where the emergency lands + every job pushed back, grouped per business-local day. &#x60;displacement_mode&#x3D;reassign&#x60; instead hands each displaced job to another feasible technician at its ORIGINAL window (same-day promise) — jobs with no alternate capacity fall back to reschedule and stay in &#x60;days&#x60;. &#x60;mode&#x3D;overtime&#x60; keeps everyone same-day (tech works late); &#x60;mode&#x3D;next_day&#x60; rolls overflow to the next working day(s). Read-only — safe to call repeatedly; commit is a separate endpoint. Isolated feature (see EMERGENCY_RESCHEDULE_DESIGN.md). 409 NEXT STEPS: EMERGENCY_RESCHEDULE_SLOT_OCCUPIED — the landing window is blocked by a job the cascade may NOT move (another P0, a crew or multi-day job): choose another technician (walk the /candidates ranking) or another time; displacement never touches P0/crew/multi-day anchors. EMERGENCY_RESCHEDULE_NOT_ELIGIBLE / CREW_UNSUPPORTED / MULTIDAY_UNSUPPORTED / NO_WORKING_DAY / IN_PAST — same remedies as /candidates.
+    # @param job_request_emergency_preview_request [JobRequestEmergencyPreviewRequest] emergency insert spec
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(CommitEmergencyReschedule200Response, Integer, Hash)>] CommitEmergencyReschedule200Response data, response status code and response headers
+    def preview_emergency_reschedule_with_http_info(job_request_emergency_preview_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: JobRequestBusinessApi.preview_emergency_reschedule ...'
+      end
+      # verify the required parameter 'job_request_emergency_preview_request' is set
+      if @api_client.config.client_side_validation && job_request_emergency_preview_request.nil?
+        fail ArgumentError, "Missing the required parameter 'job_request_emergency_preview_request' when calling JobRequestBusinessApi.preview_emergency_reschedule"
+      end
+      # resource path
+      local_var_path = '/job-requests/emergency/preview'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(job_request_emergency_preview_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'CommitEmergencyReschedule200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"JobRequestBusinessApi.preview_emergency_reschedule",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: JobRequestBusinessApi#preview_emergency_reschedule\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Preview a schedule-board job move
+    # Computes (WITHOUT writing) the outcome of moving a confirmed job to a new time and/or technician: where it lands, every later job pushed back per `mode`, and the warnings the coordinator would accept (displaced jobs leaving their confirmed windows, overtime). Same technician = pure time move; different technician = manual reassign. Read-only — safe to call repeatedly while dragging; commit is a separate endpoint. See SCHEDULE_BOARD_DESIGN.md. Warning detail: a TECH_NOT_FEASIBLE warning carries `reason` = `cannot_arrive_in_time` (commute from the tech day-start location / shift start; `earliest_feasible_at` (RFC3339 UTC) is the first same-day time they CAN be on site — suggest it as the drop slot) | `missing_required_skills` | `not_available_today` (no working hours, approved time off, or outside the service area) | `not_lead_tier`. For a P0 move this warning is advisory (coordinator may commit anyway); for p1/p2/p3 the same condition is the hard 409 SCHEDULE_MOVE_TECH_INFEASIBLE. 409 NEXT STEPS: SCHEDULE_MOVE_NOT_ELIGIBLE (job unconfirmed/unquoted/archived/completed — not movable) · SCHEDULE_MOVE_IN_PROGRESS (tech already executing — do not move) · SCHEDULE_MOVE_IN_PAST (pick a future time) · SCHEDULE_MOVE_OUTSIDE_WINDOW (landing time outside the customer-confirmed window — hard block; pick a time inside it) · SCHEDULE_MOVE_SLOT_OCCUPIED (landing window blocked by an immovable anchor — another tech/time) · SCHEDULE_MOVE_TECH_INFEASIBLE (non-P0 hard block: target tech not qualified/available — see the TECH_NOT_FEASIBLE warning reasons; change tech or time) · SCHEDULE_MOVE_MULTIDAY_UNSUPPORTED (multi-day jobs not movable v1) · SCHEDULE_MOVE_NO_WORKING_DAY (pick a working day) · SCHEDULE_MOVE_REQUIRES_FREE_SLOT (non-P0 moves may not displace — free capacity only, unless the owner enables allow_non_p0_displacement) · SCHEDULE_MOVE_CREW_UNSTAFFABLE (a crew slot has no feasible replacement at the new time — another time).
+    # @param id [String] Job request ID (UUID or short_code)
+    # @param job_request_move_preview_req [JobRequestMovePreviewReq] move spec
+    # @param [Hash] opts the optional parameters
+    # @return [CommitJobRequestMove200Response]
+    def preview_job_request_move(id, job_request_move_preview_req, opts = {})
+      data, _status_code, _headers = preview_job_request_move_with_http_info(id, job_request_move_preview_req, opts)
+      data
+    end
+
+    # Preview a schedule-board job move
+    # Computes (WITHOUT writing) the outcome of moving a confirmed job to a new time and/or technician: where it lands, every later job pushed back per &#x60;mode&#x60;, and the warnings the coordinator would accept (displaced jobs leaving their confirmed windows, overtime). Same technician &#x3D; pure time move; different technician &#x3D; manual reassign. Read-only — safe to call repeatedly while dragging; commit is a separate endpoint. See SCHEDULE_BOARD_DESIGN.md. Warning detail: a TECH_NOT_FEASIBLE warning carries &#x60;reason&#x60; &#x3D; &#x60;cannot_arrive_in_time&#x60; (commute from the tech day-start location / shift start; &#x60;earliest_feasible_at&#x60; (RFC3339 UTC) is the first same-day time they CAN be on site — suggest it as the drop slot) | &#x60;missing_required_skills&#x60; | &#x60;not_available_today&#x60; (no working hours, approved time off, or outside the service area) | &#x60;not_lead_tier&#x60;. For a P0 move this warning is advisory (coordinator may commit anyway); for p1/p2/p3 the same condition is the hard 409 SCHEDULE_MOVE_TECH_INFEASIBLE. 409 NEXT STEPS: SCHEDULE_MOVE_NOT_ELIGIBLE (job unconfirmed/unquoted/archived/completed — not movable) · SCHEDULE_MOVE_IN_PROGRESS (tech already executing — do not move) · SCHEDULE_MOVE_IN_PAST (pick a future time) · SCHEDULE_MOVE_OUTSIDE_WINDOW (landing time outside the customer-confirmed window — hard block; pick a time inside it) · SCHEDULE_MOVE_SLOT_OCCUPIED (landing window blocked by an immovable anchor — another tech/time) · SCHEDULE_MOVE_TECH_INFEASIBLE (non-P0 hard block: target tech not qualified/available — see the TECH_NOT_FEASIBLE warning reasons; change tech or time) · SCHEDULE_MOVE_MULTIDAY_UNSUPPORTED (multi-day jobs not movable v1) · SCHEDULE_MOVE_NO_WORKING_DAY (pick a working day) · SCHEDULE_MOVE_REQUIRES_FREE_SLOT (non-P0 moves may not displace — free capacity only, unless the owner enables allow_non_p0_displacement) · SCHEDULE_MOVE_CREW_UNSTAFFABLE (a crew slot has no feasible replacement at the new time — another time).
+    # @param id [String] Job request ID (UUID or short_code)
+    # @param job_request_move_preview_req [JobRequestMovePreviewReq] move spec
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(CommitJobRequestMove200Response, Integer, Hash)>] CommitJobRequestMove200Response data, response status code and response headers
+    def preview_job_request_move_with_http_info(id, job_request_move_preview_req, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: JobRequestBusinessApi.preview_job_request_move ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling JobRequestBusinessApi.preview_job_request_move"
+      end
+      # verify the required parameter 'job_request_move_preview_req' is set
+      if @api_client.config.client_side_validation && job_request_move_preview_req.nil?
+        fail ArgumentError, "Missing the required parameter 'job_request_move_preview_req' when calling JobRequestBusinessApi.preview_job_request_move"
+      end
+      # resource path
+      local_var_path = '/job-requests/{id}/move/preview'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(job_request_move_preview_req)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'CommitJobRequestMove200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"JobRequestBusinessApi.preview_job_request_move",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: JobRequestBusinessApi#preview_job_request_move\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Fire quote (FIXED action — business)
+    # Sends the quote: sets quoted_at + duration cols, advances pending_action to confirm_booking. Status stays `booking`.
+    # @param id [String] Job request ID
+    # @param job_request_quote_request [JobRequestQuoteRequest] Quote payload
+    # @param [Hash] opts the optional parameters
+    # @return [ResponseEnvelope]
+    def quote_job_request(id, job_request_quote_request, opts = {})
+      data, _status_code, _headers = quote_job_request_with_http_info(id, job_request_quote_request, opts)
+      data
+    end
+
+    # Fire quote (FIXED action — business)
+    # Sends the quote: sets quoted_at + duration cols, advances pending_action to confirm_booking. Status stays &#x60;booking&#x60;.
+    # @param id [String] Job request ID
+    # @param job_request_quote_request [JobRequestQuoteRequest] Quote payload
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(ResponseEnvelope, Integer, Hash)>] ResponseEnvelope data, response status code and response headers
+    def quote_job_request_with_http_info(id, job_request_quote_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: JobRequestBusinessApi.quote_job_request ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling JobRequestBusinessApi.quote_job_request"
+      end
+      # verify the required parameter 'job_request_quote_request' is set
+      if @api_client.config.client_side_validation && job_request_quote_request.nil?
+        fail ArgumentError, "Missing the required parameter 'job_request_quote_request' when calling JobRequestBusinessApi.quote_job_request"
+      end
+      # resource path
+      local_var_path = '/job-requests/{id}/quote'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(job_request_quote_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ResponseEnvelope'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"JobRequestBusinessApi.quote_job_request",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: JobRequestBusinessApi#quote_job_request\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Set job priority (scheduling staff)
+    # Sets the P0–P3 priority on a non-archived, non-completed job (Owner / Administrator / Booking Coordinator). Allowed values: \"p0\" (emergency, interrupt-driven) | \"p1\" (top — displaced only by p0; may carry an sla_deadline arming auto-escalation) | \"p2\" (standard) | \"p3\" (deferrable, first displacement victim). sla_deadline is only valid with p1 and must be in the future (business-local naive datetime); moving away from p1 disarms the SLA clock. Accepts UUID or short_code in :id.
+    # @param id [String] Job request ID or short_code
+    # @param job_request_update_priority_request [JobRequestUpdatePriorityRequest] Priority payload
+    # @param [Hash] opts the optional parameters
+    # @return [ResponseEnvelope]
+    def update_job_priority(id, job_request_update_priority_request, opts = {})
+      data, _status_code, _headers = update_job_priority_with_http_info(id, job_request_update_priority_request, opts)
+      data
+    end
+
+    # Set job priority (scheduling staff)
+    # Sets the P0–P3 priority on a non-archived, non-completed job (Owner / Administrator / Booking Coordinator). Allowed values: \&quot;p0\&quot; (emergency, interrupt-driven) | \&quot;p1\&quot; (top — displaced only by p0; may carry an sla_deadline arming auto-escalation) | \&quot;p2\&quot; (standard) | \&quot;p3\&quot; (deferrable, first displacement victim). sla_deadline is only valid with p1 and must be in the future (business-local naive datetime); moving away from p1 disarms the SLA clock. Accepts UUID or short_code in :id.
+    # @param id [String] Job request ID or short_code
+    # @param job_request_update_priority_request [JobRequestUpdatePriorityRequest] Priority payload
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(ResponseEnvelope, Integer, Hash)>] ResponseEnvelope data, response status code and response headers
+    def update_job_priority_with_http_info(id, job_request_update_priority_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: JobRequestBusinessApi.update_job_priority ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling JobRequestBusinessApi.update_job_priority"
+      end
+      # verify the required parameter 'job_request_update_priority_request' is set
+      if @api_client.config.client_side_validation && job_request_update_priority_request.nil?
+        fail ArgumentError, "Missing the required parameter 'job_request_update_priority_request' when calling JobRequestBusinessApi.update_job_priority"
+      end
+      # resource path
+      local_var_path = '/job-requests/{id}/priority'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(job_request_update_priority_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ResponseEnvelope'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"JobRequestBusinessApi.update_job_priority",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:PATCH, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: JobRequestBusinessApi#update_job_priority\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
       end
       return data, status_code, headers
     end

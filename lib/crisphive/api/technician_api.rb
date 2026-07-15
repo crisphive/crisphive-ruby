@@ -1,7 +1,7 @@
 =begin
-#CrispHive Developer API
+#Crisphive Developer API
 
-#Public REST API for integrating CrispHive from your own backend. Authenticate every request with a secret API key as a Bearer token (`Authorization: Bearer chsk_live_…`). The key prefix selects the data environment: `chsk_live_…` → production (live), `chsk_test_…` → sandbox (isolated test).  **Key scopes (restricted keys).** A key is either *full-access* (can call every endpoint below) or *restricted* to a set of permission codes chosen at creation — the same codes as the dashboard permission grid (e.g. `customers_view`, `job_create`, `team_manage`). A restricted key calling an endpoint outside its scope gets `403`. The full code list is the permission catalog (`GET /permission/modules` on the dashboard API). Create, scope, and revoke keys from the business dashboard.  Every response is wrapped in the envelope `{ \"error_code\": 0, \"message\": \"Success\", \"data\": <payload> }`.
+#Public REST API for integrating Crisphive from your own backend. Authenticate every request with a secret API key as a Bearer token (`Authorization: Bearer chsk_live_…`). The key prefix selects the data environment: `chsk_live_…` → production (live), `chsk_test_…` → sandbox (isolated test).  **Key scopes (restricted keys).** A key is either *full-access* (can call every endpoint below) or *restricted* to a set of permission codes chosen at creation — the same codes as the dashboard permission grid (e.g. `customers_view`, `job_create`, `team_manage`). A restricted key calling an endpoint outside its scope gets `403`. The full code list is the permission catalog (`GET /permission/modules` on the dashboard API). Create, scope, and revoke keys from the business dashboard.  Every response is wrapped in the envelope `{ \"error_code\": 0, \"message\": \"Success\", \"data\": <payload> }`.
 
 The version of the OpenAPI document: 1.0
 
@@ -19,8 +19,142 @@ module Crisphive
     def initialize(api_client = ApiClient.default)
       @api_client = api_client
     end
+    # Add a technician
+    # Creates a technician membership under the current business. If the phone/email matches an existing user, their account is linked. Otherwise a new user identity is created (no invite email — login is passwordless later). Either way the membership starts active. If the technician was previously removed (deactive) they are reactivated instead. Owner/Administrator groups cannot be assigned via API key, and not at all in sandbox mode.  Optional relations (all validated; any missing id → 404 TECHNICIAN_NOT_FOUND with `missing_ids`): `buddy_ids` sets this technician's buddy list (use when creating a lead); `lead_ids` adds this technician as a buddy of each named lead (use when creating a buddy — the buddy-side way to attach the same lead↔buddy relation); `service_area_ids` assigns the technician to those service areas.  `start_location_type=office` snapshots the business address + coordinates into the technician at create time; `address`, `start_location_lat`, `start_location_long` in the body are ignored. Requires the business to have coordinates set (else 400 BUSINESS_LOCATION_MISSING). `start_location_type=home` (or empty) uses the address + coordinates from the body.
+    # @param technician_create_request [TechnicianCreateRequest] Technician details
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key replays the original response (header Idempotent-Replayed: true) instead of re-running the operation. Reusing a key with a different body returns 422 IDEMPOTENCY_KEY_REUSE.
+    # @return [CreateTechnician200Response]
+    def create_technician(technician_create_request, opts = {})
+      data, _status_code, _headers = create_technician_with_http_info(technician_create_request, opts)
+      data
+    end
+
+    # Add a technician
+    # Creates a technician membership under the current business. If the phone/email matches an existing user, their account is linked. Otherwise a new user identity is created (no invite email — login is passwordless later). Either way the membership starts active. If the technician was previously removed (deactive) they are reactivated instead. Owner/Administrator groups cannot be assigned via API key, and not at all in sandbox mode.  Optional relations (all validated; any missing id → 404 TECHNICIAN_NOT_FOUND with &#x60;missing_ids&#x60;): &#x60;buddy_ids&#x60; sets this technician&#39;s buddy list (use when creating a lead); &#x60;lead_ids&#x60; adds this technician as a buddy of each named lead (use when creating a buddy — the buddy-side way to attach the same lead↔buddy relation); &#x60;service_area_ids&#x60; assigns the technician to those service areas.  &#x60;start_location_type&#x3D;office&#x60; snapshots the business address + coordinates into the technician at create time; &#x60;address&#x60;, &#x60;start_location_lat&#x60;, &#x60;start_location_long&#x60; in the body are ignored. Requires the business to have coordinates set (else 400 BUSINESS_LOCATION_MISSING). &#x60;start_location_type&#x3D;home&#x60; (or empty) uses the address + coordinates from the body.
+    # @param technician_create_request [TechnicianCreateRequest] Technician details
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key replays the original response (header Idempotent-Replayed: true) instead of re-running the operation. Reusing a key with a different body returns 422 IDEMPOTENCY_KEY_REUSE.
+    # @return [Array<(CreateTechnician200Response, Integer, Hash)>] CreateTechnician200Response data, response status code and response headers
+    def create_technician_with_http_info(technician_create_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: TechnicianApi.create_technician ...'
+      end
+      # verify the required parameter 'technician_create_request' is set
+      if @api_client.config.client_side_validation && technician_create_request.nil?
+        fail ArgumentError, "Missing the required parameter 'technician_create_request' when calling TechnicianApi.create_technician"
+      end
+      # resource path
+      local_var_path = '/technicians'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+      header_params[:'Idempotency-Key'] = opts[:'idempotency_key'] if !opts[:'idempotency_key'].nil?
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(technician_create_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'CreateTechnician200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"TechnicianApi.create_technician",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: TechnicianApi#create_technician\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Remove a technician
+    # Soft-removes a technician from the business by setting status to deactive
+    # @param id [String] Technician ID
+    # @param [Hash] opts the optional parameters
+    # @return [ResponseEnvelope]
+    def delete_technician(id, opts = {})
+      data, _status_code, _headers = delete_technician_with_http_info(id, opts)
+      data
+    end
+
+    # Remove a technician
+    # Soft-removes a technician from the business by setting status to deactive
+    # @param id [String] Technician ID
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(ResponseEnvelope, Integer, Hash)>] ResponseEnvelope data, response status code and response headers
+    def delete_technician_with_http_info(id, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: TechnicianApi.delete_technician ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling TechnicianApi.delete_technician"
+      end
+      # resource path
+      local_var_path = '/technicians/{id}'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ResponseEnvelope'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"TechnicianApi.delete_technician",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:DELETE, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: TechnicianApi#delete_technician\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
     # Get a technician
-    # Returns details for a specific technician
+    # Returns one technician's full profile: contact info, employment status, assignment tier, skills/qualifications, buddy (crew) relations and assigned vehicles — the dispatch-ready view of a field worker.
     # @param id [String] Technician ID
     # @param [Hash] opts the optional parameters
     # @return [GetTechnician200Response]
@@ -30,7 +164,7 @@ module Crisphive
     end
 
     # Get a technician
-    # Returns details for a specific technician
+    # Returns one technician&#39;s full profile: contact info, employment status, assignment tier, skills/qualifications, buddy (crew) relations and assigned vehicles — the dispatch-ready view of a field worker.
     # @param id [String] Technician ID
     # @param [Hash] opts the optional parameters
     # @return [Array<(GetTechnician200Response, Integer, Hash)>] GetTechnician200Response data, response status code and response headers
@@ -83,7 +217,7 @@ module Crisphive
     end
 
     # List technicians
-    # Returns a paginated list of technicians for the current business
+    # Returns the field workforce roster: paginated technicians (field workers / engineers) with status, assignment tier (lead, buddy, float), skills and crew relations — the people the dispatch engine schedules onto jobs. Discover the `preferred_technician_id` accepted on customer records here. Supports the `since` cursor for incremental workforce sync.
     # @param [Hash] opts the optional parameters
     # @option opts [Integer] :page Page number (default 1)
     # @option opts [Integer] :limit Items per page (default 15, max 1000)
@@ -99,7 +233,7 @@ module Crisphive
     end
 
     # List technicians
-    # Returns a paginated list of technicians for the current business
+    # Returns the field workforce roster: paginated technicians (field workers / engineers) with status, assignment tier (lead, buddy, float), skills and crew relations — the people the dispatch engine schedules onto jobs. Discover the &#x60;preferred_technician_id&#x60; accepted on customer records here. Supports the &#x60;since&#x60; cursor for incremental workforce sync.
     # @param [Hash] opts the optional parameters
     # @option opts [Integer] :page Page number (default 1)
     # @option opts [Integer] :limit Items per page (default 15, max 1000)
@@ -156,6 +290,376 @@ module Crisphive
       data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
       if @api_client.config.debugging
         @api_client.config.logger.debug "API called: TechnicianApi#list_technicians\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Replace a technician's buddies
+    # Overwrites the technician's buddy list with the provided set of technician IDs. Sending an empty list clears all buddies. Each buddy ID must be an active technician of the same business; a technician cannot be their own buddy.
+    # @param id [String] Technician ID
+    # @param technician_buddies_request [TechnicianBuddiesRequest] Buddy IDs
+    # @param [Hash] opts the optional parameters
+    # @return [ResponseEnvelope]
+    def replace_technician_buddies(id, technician_buddies_request, opts = {})
+      data, _status_code, _headers = replace_technician_buddies_with_http_info(id, technician_buddies_request, opts)
+      data
+    end
+
+    # Replace a technician&#39;s buddies
+    # Overwrites the technician&#39;s buddy list with the provided set of technician IDs. Sending an empty list clears all buddies. Each buddy ID must be an active technician of the same business; a technician cannot be their own buddy.
+    # @param id [String] Technician ID
+    # @param technician_buddies_request [TechnicianBuddiesRequest] Buddy IDs
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(ResponseEnvelope, Integer, Hash)>] ResponseEnvelope data, response status code and response headers
+    def replace_technician_buddies_with_http_info(id, technician_buddies_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: TechnicianApi.replace_technician_buddies ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling TechnicianApi.replace_technician_buddies"
+      end
+      # verify the required parameter 'technician_buddies_request' is set
+      if @api_client.config.client_side_validation && technician_buddies_request.nil?
+        fail ArgumentError, "Missing the required parameter 'technician_buddies_request' when calling TechnicianApi.replace_technician_buddies"
+      end
+      # resource path
+      local_var_path = '/technicians/{id}/buddies'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(technician_buddies_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ResponseEnvelope'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"TechnicianApi.replace_technician_buddies",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:PUT, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: TechnicianApi#replace_technician_buddies\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Replace a buddy's leaders (buddy side)
+    # Sets the full set of leads this buddy belongs to (many-to-many favorites). Replace-semantics — lead_ids is the complete new list; [] clears every leader. Managed by business staff.
+    # @param id [String] Buddy technician ID
+    # @param technician_leads_request [TechnicianLeadsRequest] Lead IDs payload
+    # @param [Hash] opts the optional parameters
+    # @return [ResponseEnvelope]
+    def replace_technician_leads(id, technician_leads_request, opts = {})
+      data, _status_code, _headers = replace_technician_leads_with_http_info(id, technician_leads_request, opts)
+      data
+    end
+
+    # Replace a buddy&#39;s leaders (buddy side)
+    # Sets the full set of leads this buddy belongs to (many-to-many favorites). Replace-semantics — lead_ids is the complete new list; [] clears every leader. Managed by business staff.
+    # @param id [String] Buddy technician ID
+    # @param technician_leads_request [TechnicianLeadsRequest] Lead IDs payload
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(ResponseEnvelope, Integer, Hash)>] ResponseEnvelope data, response status code and response headers
+    def replace_technician_leads_with_http_info(id, technician_leads_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: TechnicianApi.replace_technician_leads ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling TechnicianApi.replace_technician_leads"
+      end
+      # verify the required parameter 'technician_leads_request' is set
+      if @api_client.config.client_side_validation && technician_leads_request.nil?
+        fail ArgumentError, "Missing the required parameter 'technician_leads_request' when calling TechnicianApi.replace_technician_leads"
+      end
+      # resource path
+      local_var_path = '/technicians/{id}/leads'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(technician_leads_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ResponseEnvelope'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"TechnicianApi.replace_technician_leads",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:PUT, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: TechnicianApi#replace_technician_leads\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Replace a technician's service areas
+    # Overwrites the technician's service-area assignments with the provided set of service area IDs. Sending an empty list clears all. Each service area ID must belong to the same business — any missing id → 404 SERVICE_AREA_NOT_FOUND with `missing_ids` and no writes. The resolved set is returned and also embedded as `service_areas` in the technician GET/list response. Managed by business staff (Booking Coordinator), not tech self-service.
+    # @param id [String] Technician ID
+    # @param technician_service_areas_request [TechnicianServiceAreasRequest] Service area IDs
+    # @param [Hash] opts the optional parameters
+    # @return [ReplaceTechnicianServiceAreas200Response]
+    def replace_technician_service_areas(id, technician_service_areas_request, opts = {})
+      data, _status_code, _headers = replace_technician_service_areas_with_http_info(id, technician_service_areas_request, opts)
+      data
+    end
+
+    # Replace a technician&#39;s service areas
+    # Overwrites the technician&#39;s service-area assignments with the provided set of service area IDs. Sending an empty list clears all. Each service area ID must belong to the same business — any missing id → 404 SERVICE_AREA_NOT_FOUND with &#x60;missing_ids&#x60; and no writes. The resolved set is returned and also embedded as &#x60;service_areas&#x60; in the technician GET/list response. Managed by business staff (Booking Coordinator), not tech self-service.
+    # @param id [String] Technician ID
+    # @param technician_service_areas_request [TechnicianServiceAreasRequest] Service area IDs
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(ReplaceTechnicianServiceAreas200Response, Integer, Hash)>] ReplaceTechnicianServiceAreas200Response data, response status code and response headers
+    def replace_technician_service_areas_with_http_info(id, technician_service_areas_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: TechnicianApi.replace_technician_service_areas ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling TechnicianApi.replace_technician_service_areas"
+      end
+      # verify the required parameter 'technician_service_areas_request' is set
+      if @api_client.config.client_side_validation && technician_service_areas_request.nil?
+        fail ArgumentError, "Missing the required parameter 'technician_service_areas_request' when calling TechnicianApi.replace_technician_service_areas"
+      end
+      # resource path
+      local_var_path = '/technicians/{id}/service-areas'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(technician_service_areas_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ReplaceTechnicianServiceAreas200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"TechnicianApi.replace_technician_service_areas",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:PUT, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: TechnicianApi#replace_technician_service_areas\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Replace a technician's vehicles
+    # Overwrites the technician's vehicle list with the provided set of vehicle IDs (the vehicles this technician uses). Sending an empty list clears all. Each vehicle ID must belong to the same business. The list is also embedded as `vehicle_ids` in the technician GET/list response.
+    # @param id [String] Technician ID
+    # @param technician_vehicles_request [TechnicianVehiclesRequest] Vehicle IDs
+    # @param [Hash] opts the optional parameters
+    # @return [ResponseEnvelope]
+    def replace_technician_vehicles(id, technician_vehicles_request, opts = {})
+      data, _status_code, _headers = replace_technician_vehicles_with_http_info(id, technician_vehicles_request, opts)
+      data
+    end
+
+    # Replace a technician&#39;s vehicles
+    # Overwrites the technician&#39;s vehicle list with the provided set of vehicle IDs (the vehicles this technician uses). Sending an empty list clears all. Each vehicle ID must belong to the same business. The list is also embedded as &#x60;vehicle_ids&#x60; in the technician GET/list response.
+    # @param id [String] Technician ID
+    # @param technician_vehicles_request [TechnicianVehiclesRequest] Vehicle IDs
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(ResponseEnvelope, Integer, Hash)>] ResponseEnvelope data, response status code and response headers
+    def replace_technician_vehicles_with_http_info(id, technician_vehicles_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: TechnicianApi.replace_technician_vehicles ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling TechnicianApi.replace_technician_vehicles"
+      end
+      # verify the required parameter 'technician_vehicles_request' is set
+      if @api_client.config.client_side_validation && technician_vehicles_request.nil?
+        fail ArgumentError, "Missing the required parameter 'technician_vehicles_request' when calling TechnicianApi.replace_technician_vehicles"
+      end
+      # resource path
+      local_var_path = '/technicians/{id}/vehicles'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(technician_vehicles_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ResponseEnvelope'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"TechnicianApi.replace_technician_vehicles",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:PUT, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: TechnicianApi#replace_technician_vehicles\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Update a technician
+    # Updates mutable technician profile fields. `start_location_type=office` re-snapshots the current business address + coordinates (body `address`/`start_location_lat`/`start_location_long` ignored; requires business coordinates, else 400 BUSINESS_LOCATION_MISSING). `start_location_type=home` (or empty) uses the address + coordinates from the body.
+    # @param id [String] Technician ID
+    # @param technician_update_request [TechnicianUpdateRequest] Technician details
+    # @param [Hash] opts the optional parameters
+    # @return [ResponseEnvelope]
+    def update_technician(id, technician_update_request, opts = {})
+      data, _status_code, _headers = update_technician_with_http_info(id, technician_update_request, opts)
+      data
+    end
+
+    # Update a technician
+    # Updates mutable technician profile fields. &#x60;start_location_type&#x3D;office&#x60; re-snapshots the current business address + coordinates (body &#x60;address&#x60;/&#x60;start_location_lat&#x60;/&#x60;start_location_long&#x60; ignored; requires business coordinates, else 400 BUSINESS_LOCATION_MISSING). &#x60;start_location_type&#x3D;home&#x60; (or empty) uses the address + coordinates from the body.
+    # @param id [String] Technician ID
+    # @param technician_update_request [TechnicianUpdateRequest] Technician details
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(ResponseEnvelope, Integer, Hash)>] ResponseEnvelope data, response status code and response headers
+    def update_technician_with_http_info(id, technician_update_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: TechnicianApi.update_technician ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling TechnicianApi.update_technician"
+      end
+      # verify the required parameter 'technician_update_request' is set
+      if @api_client.config.client_side_validation && technician_update_request.nil?
+        fail ArgumentError, "Missing the required parameter 'technician_update_request' when calling TechnicianApi.update_technician"
+      end
+      # resource path
+      local_var_path = '/technicians/{id}'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(technician_update_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ResponseEnvelope'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"TechnicianApi.update_technician",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:PUT, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: TechnicianApi#update_technician\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
       end
       return data, status_code, headers
     end

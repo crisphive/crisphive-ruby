@@ -1,7 +1,7 @@
 =begin
-#CrispHive Developer API
+#Crisphive Developer API
 
-#Public REST API for integrating CrispHive from your own backend. Authenticate every request with a secret API key as a Bearer token (`Authorization: Bearer chsk_live_…`). The key prefix selects the data environment: `chsk_live_…` → production (live), `chsk_test_…` → sandbox (isolated test).  **Key scopes (restricted keys).** A key is either *full-access* (can call every endpoint below) or *restricted* to a set of permission codes chosen at creation — the same codes as the dashboard permission grid (e.g. `customers_view`, `job_create`, `team_manage`). A restricted key calling an endpoint outside its scope gets `403`. The full code list is the permission catalog (`GET /permission/modules` on the dashboard API). Create, scope, and revoke keys from the business dashboard.  Every response is wrapped in the envelope `{ \"error_code\": 0, \"message\": \"Success\", \"data\": <payload> }`.
+#Public REST API for integrating Crisphive from your own backend. Authenticate every request with a secret API key as a Bearer token (`Authorization: Bearer chsk_live_…`). The key prefix selects the data environment: `chsk_live_…` → production (live), `chsk_test_…` → sandbox (isolated test).  **Key scopes (restricted keys).** A key is either *full-access* (can call every endpoint below) or *restricted* to a set of permission codes chosen at creation — the same codes as the dashboard permission grid (e.g. `customers_view`, `job_create`, `team_manage`). A restricted key calling an endpoint outside its scope gets `403`. The full code list is the permission catalog (`GET /permission/modules` on the dashboard API). Create, scope, and revoke keys from the business dashboard.  Every response is wrapped in the envelope `{ \"error_code\": 0, \"message\": \"Success\", \"data\": <payload> }`.
 
 The version of the OpenAPI document: 1.0
 
@@ -14,13 +14,25 @@ require 'date'
 require 'time'
 
 module Crisphive
-  class Date
-    attr_accessor :time_time
+  class ReplaceTechnicianServiceAreas200Response
+    attr_accessor :data
+
+    # 0 on success; a stable string error code (e.g. \"VALIDATION_ERROR\") on failure.
+    attr_accessor :error_code
+
+    # Field-level validation details; present only for VALIDATION_ERROR responses.
+    attr_accessor :errors
+
+    # Human-readable message (\"Success\" or an error description), localized via the X-Locale header.
+    attr_accessor :message
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'time_time' => :'time.Time'
+        :'data' => :'data',
+        :'error_code' => :'error_code',
+        :'errors' => :'errors',
+        :'message' => :'message'
       }
     end
 
@@ -32,33 +44,57 @@ module Crisphive
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'time_time' => :'String'
+        :'data' => :'TechnicianServiceAreasResponse',
+        :'error_code' => :'Object',
+        :'errors' => :'Object',
+        :'message' => :'String'
       }
     end
 
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
+        :'error_code',
+        :'errors',
       ])
+    end
+
+    # List of class defined in allOf (OpenAPI v3)
+    def self.openapi_all_of
+      [
+      :'ResponseEnvelope'
+      ]
     end
 
     # Initializes the object
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `Crisphive::Date` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `Crisphive::ReplaceTechnicianServiceAreas200Response` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!self.class.attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `Crisphive::Date`. Please check the name to make sure it's valid. List of attributes: " + self.class.attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `Crisphive::ReplaceTechnicianServiceAreas200Response`. Please check the name to make sure it's valid. List of attributes: " + self.class.attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }
 
-      if attributes.key?(:'time_time')
-        self.time_time = attributes[:'time_time']
+      if attributes.key?(:'data')
+        self.data = attributes[:'data']
+      end
+
+      if attributes.key?(:'error_code')
+        self.error_code = attributes[:'error_code']
+      end
+
+      if attributes.key?(:'errors')
+        self.errors = attributes[:'errors']
+      end
+
+      if attributes.key?(:'message')
+        self.message = attributes[:'message']
       end
     end
 
@@ -82,7 +118,10 @@ module Crisphive
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
-          time_time == o.time_time
+          data == o.data &&
+          error_code == o.error_code &&
+          errors == o.errors &&
+          message == o.message
     end
 
     # @see the `==` method
@@ -94,7 +133,7 @@ module Crisphive
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [time_time].hash
+      [data, error_code, errors, message].hash
     end
 
     # Builds the object from hash

@@ -1,7 +1,7 @@
 =begin
-#CrispHive Developer API
+#Crisphive Developer API
 
-#Public REST API for integrating CrispHive from your own backend. Authenticate every request with a secret API key as a Bearer token (`Authorization: Bearer chsk_live_…`). The key prefix selects the data environment: `chsk_live_…` → production (live), `chsk_test_…` → sandbox (isolated test).  **Key scopes (restricted keys).** A key is either *full-access* (can call every endpoint below) or *restricted* to a set of permission codes chosen at creation — the same codes as the dashboard permission grid (e.g. `customers_view`, `job_create`, `team_manage`). A restricted key calling an endpoint outside its scope gets `403`. The full code list is the permission catalog (`GET /permission/modules` on the dashboard API). Create, scope, and revoke keys from the business dashboard.  Every response is wrapped in the envelope `{ \"error_code\": 0, \"message\": \"Success\", \"data\": <payload> }`.
+#Public REST API for integrating Crisphive from your own backend. Authenticate every request with a secret API key as a Bearer token (`Authorization: Bearer chsk_live_…`). The key prefix selects the data environment: `chsk_live_…` → production (live), `chsk_test_…` → sandbox (isolated test).  **Key scopes (restricted keys).** A key is either *full-access* (can call every endpoint below) or *restricted* to a set of permission codes chosen at creation — the same codes as the dashboard permission grid (e.g. `customers_view`, `job_create`, `team_manage`). A restricted key calling an endpoint outside its scope gets `403`. The full code list is the permission catalog (`GET /permission/modules` on the dashboard API). Create, scope, and revoke keys from the business dashboard.  Every response is wrapped in the envelope `{ \"error_code\": 0, \"message\": \"Success\", \"data\": <payload> }`.
 
 The version of the OpenAPI document: 1.0
 
@@ -27,8 +27,36 @@ module Crisphive
     # UUID of the job type to classify this job. Optional; null leaves the job unclassified.
     attr_accessor :job_type_id
 
+    # Scheduling priority. Optional; omitted bookings receive the business's default_priority setting (assignment settings, default p2). p0=emergency (interrupt-driven insert), p1=top (displaced only by p0), p2=standard, p3=deferrable (first candidate for displacement).
+    attr_accessor :priority
+
     # UUIDs of the skills the customer desires for this job. Optional; up to 20.
     attr_accessor :skill_ids
+
+    # SLA deadline (business-local naive datetime, e.g. \"2030-06-14T17:00:00\"). Optional; ONLY valid together with priority=p1 — arms the auto-escalation clock (the job escalates to p0 as breach risk crosses the business's safety buffer). Must be in the future.
+    attr_accessor :sla_deadline
+
+    class EnumAttributeValidator
+      attr_reader :datatype
+      attr_reader :allowable_values
+
+      def initialize(datatype, allowable_values)
+        @allowable_values = allowable_values.map do |value|
+          case datatype.to_s
+          when /Integer/i
+            value.to_i
+          when /Float/i
+            value.to_f
+          else
+            value
+          end
+        end
+      end
+
+      def valid?(value)
+        !value || allowable_values.include?(value)
+      end
+    end
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
@@ -37,7 +65,9 @@ module Crisphive
         :'description' => :'description',
         :'job_dates' => :'job_dates',
         :'job_type_id' => :'job_type_id',
-        :'skill_ids' => :'skill_ids'
+        :'priority' => :'priority',
+        :'skill_ids' => :'skill_ids',
+        :'sla_deadline' => :'sla_deadline'
       }
     end
 
@@ -53,7 +83,9 @@ module Crisphive
         :'description' => :'String',
         :'job_dates' => :'Array<JobRequestJobDateRequest>',
         :'job_type_id' => :'String',
-        :'skill_ids' => :'Array<String>'
+        :'priority' => :'String',
+        :'skill_ids' => :'Array<String>',
+        :'sla_deadline' => :'String'
       }
     end
 
@@ -100,10 +132,18 @@ module Crisphive
         self.job_type_id = attributes[:'job_type_id']
       end
 
+      if attributes.key?(:'priority')
+        self.priority = attributes[:'priority']
+      end
+
       if attributes.key?(:'skill_ids')
         if (value = attributes[:'skill_ids']).is_a?(Array)
           self.skill_ids = value
         end
+      end
+
+      if attributes.key?(:'sla_deadline')
+        self.sla_deadline = attributes[:'sla_deadline']
       end
     end
 
@@ -148,6 +188,8 @@ module Crisphive
       return false if @job_dates.nil?
       return false if @job_dates.length > 12
       return false if @job_dates.length < 1
+      priority_validator = EnumAttributeValidator.new('String', ["p0", "p1", "p2", "p3"])
+      return false unless priority_validator.valid?(@priority)
       return false if !@skill_ids.nil? && @skill_ids.length > 20
       true
     end
@@ -184,6 +226,16 @@ module Crisphive
       @job_dates = job_dates
     end
 
+    # Custom attribute writer method checking allowed values (enum).
+    # @param [Object] priority Object to be assigned
+    def priority=(priority)
+      validator = EnumAttributeValidator.new('String', ["p0", "p1", "p2", "p3"])
+      unless validator.valid?(priority)
+        fail ArgumentError, "invalid value for \"priority\", must be one of #{validator.allowable_values}."
+      end
+      @priority = priority
+    end
+
     # Custom attribute writer method with validation
     # @param [Object] skill_ids Value to be assigned
     def skill_ids=(skill_ids)
@@ -207,7 +259,9 @@ module Crisphive
           description == o.description &&
           job_dates == o.job_dates &&
           job_type_id == o.job_type_id &&
-          skill_ids == o.skill_ids
+          priority == o.priority &&
+          skill_ids == o.skill_ids &&
+          sla_deadline == o.sla_deadline
     end
 
     # @see the `==` method
@@ -219,7 +273,7 @@ module Crisphive
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [customer_id, description, job_dates, job_type_id, skill_ids].hash
+      [customer_id, description, job_dates, job_type_id, priority, skill_ids, sla_deadline].hash
     end
 
     # Builds the object from hash

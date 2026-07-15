@@ -1,7 +1,7 @@
 =begin
-#CrispHive Developer API
+#Crisphive Developer API
 
-#Public REST API for integrating CrispHive from your own backend. Authenticate every request with a secret API key as a Bearer token (`Authorization: Bearer chsk_live_…`). The key prefix selects the data environment: `chsk_live_…` → production (live), `chsk_test_…` → sandbox (isolated test).  **Key scopes (restricted keys).** A key is either *full-access* (can call every endpoint below) or *restricted* to a set of permission codes chosen at creation — the same codes as the dashboard permission grid (e.g. `customers_view`, `job_create`, `team_manage`). A restricted key calling an endpoint outside its scope gets `403`. The full code list is the permission catalog (`GET /permission/modules` on the dashboard API). Create, scope, and revoke keys from the business dashboard.  Every response is wrapped in the envelope `{ \"error_code\": 0, \"message\": \"Success\", \"data\": <payload> }`.
+#Public REST API for integrating Crisphive from your own backend. Authenticate every request with a secret API key as a Bearer token (`Authorization: Bearer chsk_live_…`). The key prefix selects the data environment: `chsk_live_…` → production (live), `chsk_test_…` → sandbox (isolated test).  **Key scopes (restricted keys).** A key is either *full-access* (can call every endpoint below) or *restricted* to a set of permission codes chosen at creation — the same codes as the dashboard permission grid (e.g. `customers_view`, `job_create`, `team_manage`). A restricted key calling an endpoint outside its scope gets `403`. The full code list is the permission catalog (`GET /permission/modules` on the dashboard API). Create, scope, and revoke keys from the business dashboard.  Every response is wrapped in the envelope `{ \"error_code\": 0, \"message\": \"Success\", \"data\": <payload> }`.
 
 The version of the OpenAPI document: 1.0
 
@@ -29,6 +29,9 @@ module Crisphive
 
     # Who/what is assigned to the job.
     attr_accessor :assignment
+
+    # Attention is the dispatch-board \"needs attention\" marker (exception tray); null when the job needs no attention.
+    attr_accessor :attention
 
     # UUID of the owning business.
     attr_accessor :business_id
@@ -72,7 +75,7 @@ module Crisphive
     # The action(s) the job is currently waiting on. Omitted in a terminal status.
     attr_accessor :next_actions
 
-    # Job priority.
+    # Scheduling priority. p0=emergency (interrupt-driven), p1=top (displaced only by p0), p2=standard, p3=deferrable (first candidate for displacement).
     attr_accessor :priority
 
     # The time-bundle quoted for the job.
@@ -89,6 +92,15 @@ module Crisphive
 
     # Desired skills for the job (resolved id+name).
     attr_accessor :skills
+
+    # SLA deadline (UTC) armed on a p1 job; omitted when no SLA.
+    attr_accessor :sla_deadline
+
+    # When the SLA sweep auto-escalated this job to p0 (UTC); omitted if never.
+    attr_accessor :sla_escalated_at
+
+    # When the sweep fired the one-shot pre-escalation warning (UTC); omitted if never.
+    attr_accessor :sla_warned_at
 
     # Optimistic-lock version; pass back as status_version on transitions to avoid races.
     attr_accessor :status_version
@@ -132,6 +144,7 @@ module Crisphive
         :'archive' => :'archive',
         :'assigned_vehicle' => :'assigned_vehicle',
         :'assignment' => :'assignment',
+        :'attention' => :'attention',
         :'business_id' => :'business_id',
         :'completed_at' => :'completed_at',
         :'completed_by_user_id' => :'completed_by_user_id',
@@ -152,6 +165,9 @@ module Crisphive
         :'schedule' => :'schedule',
         :'short_code' => :'short_code',
         :'skills' => :'skills',
+        :'sla_deadline' => :'sla_deadline',
+        :'sla_escalated_at' => :'sla_escalated_at',
+        :'sla_warned_at' => :'sla_warned_at',
         :'status_version' => :'status_version',
         :'updated_at' => :'updated_at',
         :'workflow_id' => :'workflow_id',
@@ -172,6 +188,7 @@ module Crisphive
         :'archive' => :'JobRequestArchiveSummary',
         :'assigned_vehicle' => :'JobRequestAssignedVehicle',
         :'assignment' => :'JobRequestAssignmentSummary',
+        :'attention' => :'JobRequestAttentionSummary',
         :'business_id' => :'String',
         :'completed_at' => :'Time',
         :'completed_by_user_id' => :'String',
@@ -192,6 +209,9 @@ module Crisphive
         :'schedule' => :'JobRequestSchedule',
         :'short_code' => :'String',
         :'skills' => :'Array<JobRequestSkillSummary>',
+        :'sla_deadline' => :'Time',
+        :'sla_escalated_at' => :'Time',
+        :'sla_warned_at' => :'Time',
         :'status_version' => :'Integer',
         :'updated_at' => :'Time',
         :'workflow_id' => :'String',
@@ -240,6 +260,10 @@ module Crisphive
 
       if attributes.key?(:'assignment')
         self.assignment = attributes[:'assignment']
+      end
+
+      if attributes.key?(:'attention')
+        self.attention = attributes[:'attention']
       end
 
       if attributes.key?(:'business_id')
@@ -328,6 +352,18 @@ module Crisphive
         end
       end
 
+      if attributes.key?(:'sla_deadline')
+        self.sla_deadline = attributes[:'sla_deadline']
+      end
+
+      if attributes.key?(:'sla_escalated_at')
+        self.sla_escalated_at = attributes[:'sla_escalated_at']
+      end
+
+      if attributes.key?(:'sla_warned_at')
+        self.sla_warned_at = attributes[:'sla_warned_at']
+      end
+
       if attributes.key?(:'status_version')
         self.status_version = attributes[:'status_version']
       end
@@ -357,7 +393,7 @@ module Crisphive
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      priority_validator = EnumAttributeValidator.new('String', ["normal", "emergency"])
+      priority_validator = EnumAttributeValidator.new('String', ["p0", "p1", "p2", "p3"])
       return false unless priority_validator.valid?(@priority)
       true
     end
@@ -365,7 +401,7 @@ module Crisphive
     # Custom attribute writer method checking allowed values (enum).
     # @param [Object] priority Object to be assigned
     def priority=(priority)
-      validator = EnumAttributeValidator.new('String', ["normal", "emergency"])
+      validator = EnumAttributeValidator.new('String', ["p0", "p1", "p2", "p3"])
       unless validator.valid?(priority)
         fail ArgumentError, "invalid value for \"priority\", must be one of #{validator.allowable_values}."
       end
@@ -382,6 +418,7 @@ module Crisphive
           archive == o.archive &&
           assigned_vehicle == o.assigned_vehicle &&
           assignment == o.assignment &&
+          attention == o.attention &&
           business_id == o.business_id &&
           completed_at == o.completed_at &&
           completed_by_user_id == o.completed_by_user_id &&
@@ -402,6 +439,9 @@ module Crisphive
           schedule == o.schedule &&
           short_code == o.short_code &&
           skills == o.skills &&
+          sla_deadline == o.sla_deadline &&
+          sla_escalated_at == o.sla_escalated_at &&
+          sla_warned_at == o.sla_warned_at &&
           status_version == o.status_version &&
           updated_at == o.updated_at &&
           workflow_id == o.workflow_id &&
@@ -417,7 +457,7 @@ module Crisphive
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [action_audit, address, archive, assigned_vehicle, assignment, business_id, completed_at, completed_by_user_id, created_at, crew, current_status, customer, customer_url, deleted_at, description, id, job_type_id, job_type_name, next_actions, priority, quote, rating, schedule, short_code, skills, status_version, updated_at, workflow_id, workflow_name].hash
+      [action_audit, address, archive, assigned_vehicle, assignment, attention, business_id, completed_at, completed_by_user_id, created_at, crew, current_status, customer, customer_url, deleted_at, description, id, job_type_id, job_type_name, next_actions, priority, quote, rating, schedule, short_code, skills, sla_deadline, sla_escalated_at, sla_warned_at, status_version, updated_at, workflow_id, workflow_name].hash
     end
 
     # Builds the object from hash

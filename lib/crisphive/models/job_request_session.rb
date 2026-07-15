@@ -1,7 +1,7 @@
 =begin
-#CrispHive Developer API
+#Crisphive Developer API
 
-#Public REST API for integrating CrispHive from your own backend. Authenticate every request with a secret API key as a Bearer token (`Authorization: Bearer chsk_live_…`). The key prefix selects the data environment: `chsk_live_…` → production (live), `chsk_test_…` → sandbox (isolated test).  **Key scopes (restricted keys).** A key is either *full-access* (can call every endpoint below) or *restricted* to a set of permission codes chosen at creation — the same codes as the dashboard permission grid (e.g. `customers_view`, `job_create`, `team_manage`). A restricted key calling an endpoint outside its scope gets `403`. The full code list is the permission catalog (`GET /permission/modules` on the dashboard API). Create, scope, and revoke keys from the business dashboard.  Every response is wrapped in the envelope `{ \"error_code\": 0, \"message\": \"Success\", \"data\": <payload> }`.
+#Public REST API for integrating Crisphive from your own backend. Authenticate every request with a secret API key as a Bearer token (`Authorization: Bearer chsk_live_…`). The key prefix selects the data environment: `chsk_live_…` → production (live), `chsk_test_…` → sandbox (isolated test).  **Key scopes (restricted keys).** A key is either *full-access* (can call every endpoint below) or *restricted* to a set of permission codes chosen at creation — the same codes as the dashboard permission grid (e.g. `customers_view`, `job_create`, `team_manage`). A restricted key calling an endpoint outside its scope gets `403`. The full code list is the permission catalog (`GET /permission/modules` on the dashboard API). Create, scope, and revoke keys from the business dashboard.  Every response is wrapped in the envelope `{ \"error_code\": 0, \"message\": \"Success\", \"data\": <payload> }`.
 
 The version of the OpenAPI document: 1.0
 
@@ -18,21 +18,22 @@ module Crisphive
     # Calendar day (YYYY-MM-DD) this session falls on, business-local.
     attr_accessor :date
 
-    # DepartAt / ReturnAt bracket the technician's whole day (leave home / arrive home), derived from travel. Omitted together when travel is unknown.
+    # Leave-home time bracketing the day: StartAt minus planned travel (UTC). Omitted (with return_at) when travel is unknown.
     attr_accessor :depart_at
 
-    # On-site end of this day's work block (UTC).
+    # Leave site — end of demobilization (UTC).
     attr_accessor :end_at
 
     # 1-based day index within the job's span (1 for single-day jobs).
     attr_accessor :ordinal
 
+    # Arrive-home time bracketing the day: EndAt plus planned travel (UTC). Omitted (with depart_at) when travel is unknown.
     attr_accessor :return_at
 
-    # On-site start of this day's work block (UTC).
+    # On-site arrival — start of mobilization (UTC).
     attr_accessor :start_at
 
-    # TravelMinutes is the planned one-way commute for this day. Omitted when unknown (admin-fallback job without geocoded location, or legacy row).
+    # TravelMinutes is the PLANNED one-way commute (home → site) for this day, snapshotted at assignment. Omitted when unknown (admin-fallback job with no geocoded location, or legacy row).
     attr_accessor :travel_minutes
 
     # Attribute mapping from ruby-style variable name to JSON key.
@@ -56,7 +57,7 @@ module Crisphive
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'date' => :'Time',
+        :'date' => :'Date',
         :'depart_at' => :'Time',
         :'end_at' => :'Time',
         :'ordinal' => :'Integer',
