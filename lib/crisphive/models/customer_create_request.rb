@@ -24,7 +24,7 @@ module Crisphive
     # Customer's full name. Required; max 255 chars.
     attr_accessor :full_name
 
-    # Phone number. Optional, but at least one of phone/email is required; 10–20 chars.
+    # Phone number in E.164 international format: a leading `+` and the country code, e.g. `+16135550188`. A bare national number (`6135550188`) is REJECTED with PHONE_INVALID — there is no default region to guess the country from. Separators (spaces, dashes, parentheses) are stripped before validation. Optional, but at least one of phone/email is required; 10–20 chars.
     attr_accessor :phone
 
     # UUID of the technician this customer prefers. Must belong to this business.
@@ -32,6 +32,9 @@ module Crisphive
 
     # UUID of the service area for this customer. Must belong to this business.
     attr_accessor :service_area_id
+
+    # SMS consent: set true ONLY when the customer explicitly agreed to receive SMS (e.g. ticked a non-pre-checked consent box, or gave verbal/written consent you keep a record of). SMS notifications are suppressed while false.
+    attr_accessor :sms_opt_in
 
     # Loyalty tier. Defaults to \"regular\" if omitted.
     attr_accessor :tier
@@ -70,6 +73,7 @@ module Crisphive
         :'phone' => :'phone',
         :'preferred_technician_id' => :'preferred_technician_id',
         :'service_area_id' => :'service_area_id',
+        :'sms_opt_in' => :'sms_opt_in',
         :'tier' => :'tier',
         :'uid' => :'uid'
       }
@@ -89,6 +93,7 @@ module Crisphive
         :'phone' => :'String',
         :'preferred_technician_id' => :'String',
         :'service_area_id' => :'String',
+        :'sms_opt_in' => :'Boolean',
         :'tier' => :'String',
         :'uid' => :'String'
       }
@@ -139,6 +144,10 @@ module Crisphive
 
       if attributes.key?(:'service_area_id')
         self.service_area_id = attributes[:'service_area_id']
+      end
+
+      if attributes.key?(:'sms_opt_in')
+        self.sms_opt_in = attributes[:'sms_opt_in']
       end
 
       if attributes.key?(:'tier')
@@ -250,6 +259,7 @@ module Crisphive
           phone == o.phone &&
           preferred_technician_id == o.preferred_technician_id &&
           service_area_id == o.service_area_id &&
+          sms_opt_in == o.sms_opt_in &&
           tier == o.tier &&
           uid == o.uid
     end
@@ -263,7 +273,7 @@ module Crisphive
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [address, email, full_name, phone, preferred_technician_id, service_area_id, tier, uid].hash
+      [address, email, full_name, phone, preferred_technician_id, service_area_id, sms_opt_in, tier, uid].hash
     end
 
     # Builds the object from hash

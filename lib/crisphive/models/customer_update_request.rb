@@ -15,34 +15,37 @@ require 'time'
 
 module Crisphive
   class CustomerUpdateRequest
-    # Postal address and coordinates.
+    # Postal address and coordinates. Omit the whole object to leave the stored address untouched; when present it REPLACES the address block.
     attr_accessor :address
 
-    # Email address.
+    # Email address. Omit to leave unchanged, \"\" to clear.
     attr_accessor :email
 
-    # Customer's full name. Required; max 255 chars.
+    # Customer's full name. Omit to leave unchanged; an empty or blank value is ignored (a customer cannot be left nameless). Max 255 chars.
     attr_accessor :full_name
 
-    # Free-form internal notes about the customer; max 4000 chars.
+    # Free-form internal notes about the customer. Omit to leave unchanged, \"\" to clear; max 4000 chars.
     attr_accessor :notes
 
-    # Phone number. 10–20 chars.
+    # Phone number in E.164 international format (`+16135550188`); a bare national number is rejected with PHONE_INVALID — see createCustomerReq.Phone. Omit to leave unchanged, \"\" to clear. 10–20 chars.
     attr_accessor :phone
 
-    # UUID of the technician this customer prefers. Must belong to this business.
+    # UUID of the technician this customer prefers. Omit to leave unchanged, \"\" to clear. Must belong to this business.
     attr_accessor :preferred_technician_id
 
-    # UUID of the service area for this customer. Must belong to this business.
+    # UUID of the service area for this customer. Omit to leave unchanged, \"\" to clear. Must belong to this business.
     attr_accessor :service_area_id
 
-    # Lifecycle status.
+    # SMS consent, tri-state: omit/null = leave unchanged; true = grant (only when the customer explicitly consented — the original consent timestamp is preserved); false = revoke (opt-out, stops SMS immediately).
+    attr_accessor :sms_opt_in
+
+    # Lifecycle status. Omit to leave unchanged; \"\" is ignored.
     attr_accessor :status
 
-    # Loyalty tier.
+    # Loyalty tier. Omit to leave unchanged; \"\" is ignored (an enum has no empty member).
     attr_accessor :tier
 
-    # Your external reference for this customer. Optional; max 32 chars.
+    # Your external reference for this customer. Omit to leave unchanged, \"\" to clear. Max 32 chars.
     attr_accessor :uid
 
     class EnumAttributeValidator
@@ -77,6 +80,7 @@ module Crisphive
         :'phone' => :'phone',
         :'preferred_technician_id' => :'preferred_technician_id',
         :'service_area_id' => :'service_area_id',
+        :'sms_opt_in' => :'sms_opt_in',
         :'status' => :'status',
         :'tier' => :'tier',
         :'uid' => :'uid'
@@ -98,6 +102,7 @@ module Crisphive
         :'phone' => :'String',
         :'preferred_technician_id' => :'String',
         :'service_area_id' => :'String',
+        :'sms_opt_in' => :'Boolean',
         :'status' => :'String',
         :'tier' => :'String',
         :'uid' => :'String'
@@ -135,8 +140,6 @@ module Crisphive
 
       if attributes.key?(:'full_name')
         self.full_name = attributes[:'full_name']
-      else
-        self.full_name = nil
       end
 
       if attributes.key?(:'notes')
@@ -153,6 +156,10 @@ module Crisphive
 
       if attributes.key?(:'service_area_id')
         self.service_area_id = attributes[:'service_area_id']
+      end
+
+      if attributes.key?(:'sms_opt_in')
+        self.sms_opt_in = attributes[:'sms_opt_in']
       end
 
       if attributes.key?(:'status')
@@ -173,11 +180,7 @@ module Crisphive
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @full_name.nil?
-        invalid_properties.push('invalid value for "full_name", full_name cannot be nil.')
-      end
-
-      if @full_name.to_s.length > 255
+      if !@full_name.nil? && @full_name.to_s.length > 255
         invalid_properties.push('invalid value for "full_name", the character length must be smaller than or equal to 255.')
       end
 
@@ -200,8 +203,7 @@ module Crisphive
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @full_name.nil?
-      return false if @full_name.to_s.length > 255
+      return false if !@full_name.nil? && @full_name.to_s.length > 255
       return false if !@notes.nil? && @notes.to_s.length > 4000
       return false if !@phone.nil? && @phone.to_s.length > 20
       status_validator = EnumAttributeValidator.new('String', ["active", "inactive"])
@@ -300,6 +302,7 @@ module Crisphive
           phone == o.phone &&
           preferred_technician_id == o.preferred_technician_id &&
           service_area_id == o.service_area_id &&
+          sms_opt_in == o.sms_opt_in &&
           status == o.status &&
           tier == o.tier &&
           uid == o.uid
@@ -314,7 +317,7 @@ module Crisphive
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [address, email, full_name, notes, phone, preferred_technician_id, service_area_id, status, tier, uid].hash
+      [address, email, full_name, notes, phone, preferred_technician_id, service_area_id, sms_opt_in, status, tier, uid].hash
     end
 
     # Builds the object from hash

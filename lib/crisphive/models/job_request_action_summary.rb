@@ -24,7 +24,7 @@ module Crisphive
     # Action key (e.g. quote, confirm_booking, complete, or a custom DYNAMIC action).
     attr_accessor :key
 
-    # Action label, resolved to the request locale.
+    # Action label as authored on the workflow (canonical; NOT resolved to the request locale).
     attr_accessor :label
 
     class EnumAttributeValidator

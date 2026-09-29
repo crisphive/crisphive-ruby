@@ -15,10 +15,13 @@ require 'time'
 
 module Crisphive
   class JobRequestConfirmRequest
+    # AfterHoursOverride (BUSINESS confirm only): schedule this P0 outside the technician's working hours or approved time-off — you have phoned them and they agreed. Requires priority p0, a single-person job, and technician_id. Double-booking, service area, required skills and the lead-tier rule still reject. Deliberately NOT a binding-tag rule: gin evaluates tags before the handler, which would make the three AFTER_HOURS codes unreachable.
+    attr_accessor :after_hours_override
+
     # ArrivalWindowMinutes = width (phút) của arrival-window ô khách bấm ở slot-picker (chính là time_slot_step_minutes, mặc định 30). Persist để post-confirm detail render lại đúng window. Optional; bounds ([5, 240], khớp slot-picker step) validate ở usecase — single authority, một error code (JOB_REQUEST_INVALID_INPUT).
     attr_accessor :arrival_window_minutes
 
-    # Chosen start time — business-local naive datetime, no offset (the business_time.datetime value from the time-segments picker). The server converts to UTC using the job's business timezone.
+    # Chosen start time — business-local wall clock (the business_time.datetime value from the time-segments picker), converted to UTC against the job's business timezone. Seconds may be omitted and a space may replace the T. An offset is accepted only when it agrees with the business timezone; a disagreeing one is refused with JOB_REQUEST_INVALID_INPUT naming what it means locally.
     attr_accessor :scheduled_at
 
     # Optimistic-lock fence: the status_version from your last read. Omitted/0 = fence on the row's current version (no race protection).
@@ -30,6 +33,7 @@ module Crisphive
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
+        :'after_hours_override' => :'after_hours_override',
         :'arrival_window_minutes' => :'arrival_window_minutes',
         :'scheduled_at' => :'scheduled_at',
         :'status_version' => :'status_version',
@@ -45,8 +49,9 @@ module Crisphive
     # Attribute type mapping.
     def self.openapi_types
       {
+        :'after_hours_override' => :'Boolean',
         :'arrival_window_minutes' => :'Integer',
-        :'scheduled_at' => :'String',
+        :'scheduled_at' => :'Time',
         :'status_version' => :'Integer',
         :'technician_id' => :'String'
       }
@@ -72,6 +77,10 @@ module Crisphive
         end
         h[k.to_sym] = v
       }
+
+      if attributes.key?(:'after_hours_override')
+        self.after_hours_override = attributes[:'after_hours_override']
+      end
 
       if attributes.key?(:'arrival_window_minutes')
         self.arrival_window_minutes = attributes[:'arrival_window_minutes']
@@ -110,6 +119,7 @@ module Crisphive
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
+          after_hours_override == o.after_hours_override &&
           arrival_window_minutes == o.arrival_window_minutes &&
           scheduled_at == o.scheduled_at &&
           status_version == o.status_version &&
@@ -125,7 +135,7 @@ module Crisphive
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [arrival_window_minutes, scheduled_at, status_version, technician_id].hash
+      [after_hours_override, arrival_window_minutes, scheduled_at, status_version, technician_id].hash
     end
 
     # Builds the object from hash

@@ -19,6 +19,140 @@ module Crisphive
     def initialize(api_client = ApiClient.default)
       @api_client = api_client
     end
+    # Add a job type to the catalog
+    # Creates a kind of work customers can book, such as \"Annual boiler service\" or \"Drain unblocking\". Job types classify bookings: createJobRequest takes an optional `job_type_id` from this catalog and the job keeps the type's name as it was at booking time.  `name` is the only required field and must be unique in the business (JOB_TYPE_DUPLICATE). `status` defaults to active. An inactive type stays in the catalog but cannot be chosen for new job requests; use that rather than deleting a type you may revive.  Send an Idempotency-Key header (the `idempotency_key` argument over MCP) so a retried call replays the original response instead of creating a duplicate type.  Optional default_duration_minutes (+ default_mobilization_minutes / default_demobilization_minutes) set how long this kind of work usually takes: quoteJobRequest uses them when it is sent no job_duration_minutes, so an automation or voice agent can schedule the job without knowing the length. A buffer needs a duration (JOB_TYPE_INVALID_DEFAULT_DURATION).  This defines the catalog, not a booking. To book actual work use createJobRequest and reference the job type there.
+    # @param job_type_create_request [JobTypeCreateRequest] Job type
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key replays the original response (header Idempotent-Replayed: true) instead of re-running the operation. Reusing a key with a different body returns 422 IDEMPOTENCY_KEY_REUSE.
+    # @return [CreateJobType200Response]
+    def create_job_type(job_type_create_request, opts = {})
+      data, _status_code, _headers = create_job_type_with_http_info(job_type_create_request, opts)
+      data
+    end
+
+    # Add a job type to the catalog
+    # Creates a kind of work customers can book, such as \&quot;Annual boiler service\&quot; or \&quot;Drain unblocking\&quot;. Job types classify bookings: createJobRequest takes an optional &#x60;job_type_id&#x60; from this catalog and the job keeps the type&#39;s name as it was at booking time.  &#x60;name&#x60; is the only required field and must be unique in the business (JOB_TYPE_DUPLICATE). &#x60;status&#x60; defaults to active. An inactive type stays in the catalog but cannot be chosen for new job requests; use that rather than deleting a type you may revive.  Send an Idempotency-Key header (the &#x60;idempotency_key&#x60; argument over MCP) so a retried call replays the original response instead of creating a duplicate type.  Optional default_duration_minutes (+ default_mobilization_minutes / default_demobilization_minutes) set how long this kind of work usually takes: quoteJobRequest uses them when it is sent no job_duration_minutes, so an automation or voice agent can schedule the job without knowing the length. A buffer needs a duration (JOB_TYPE_INVALID_DEFAULT_DURATION).  This defines the catalog, not a booking. To book actual work use createJobRequest and reference the job type there.
+    # @param job_type_create_request [JobTypeCreateRequest] Job type
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key replays the original response (header Idempotent-Replayed: true) instead of re-running the operation. Reusing a key with a different body returns 422 IDEMPOTENCY_KEY_REUSE.
+    # @return [Array<(CreateJobType200Response, Integer, Hash)>] CreateJobType200Response data, response status code and response headers
+    def create_job_type_with_http_info(job_type_create_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: JobTypesApi.create_job_type ...'
+      end
+      # verify the required parameter 'job_type_create_request' is set
+      if @api_client.config.client_side_validation && job_type_create_request.nil?
+        fail ArgumentError, "Missing the required parameter 'job_type_create_request' when calling JobTypesApi.create_job_type"
+      end
+      # resource path
+      local_var_path = '/job-types'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+      header_params[:'Idempotency-Key'] = opts[:'idempotency_key'] if !opts[:'idempotency_key'].nil?
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(job_type_create_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'CreateJobType200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"JobTypesApi.create_job_type",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: JobTypesApi#create_job_type\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Remove a job type from the catalog
+    # Soft-deletes the entry: it disappears from the catalog and can no longer be selected for new bookings. Jobs already booked against it are unaffected and keep showing the name they were booked with.  Prefer updateJobType with `status=inactive` in almost every case: it has the same effect on the booking form and is trivially reversible. Delete is for a type created in error or one that will never return.  Rows the platform ships with (`is_system=true`) cannot be deleted and are refused with JOB_TYPE_SYSTEM_READ_ONLY.
+    # @param id [String] Job Type ID
+    # @param [Hash] opts the optional parameters
+    # @return [ResponseEnvelope]
+    def delete_job_type(id, opts = {})
+      data, _status_code, _headers = delete_job_type_with_http_info(id, opts)
+      data
+    end
+
+    # Remove a job type from the catalog
+    # Soft-deletes the entry: it disappears from the catalog and can no longer be selected for new bookings. Jobs already booked against it are unaffected and keep showing the name they were booked with.  Prefer updateJobType with &#x60;status&#x3D;inactive&#x60; in almost every case: it has the same effect on the booking form and is trivially reversible. Delete is for a type created in error or one that will never return.  Rows the platform ships with (&#x60;is_system&#x3D;true&#x60;) cannot be deleted and are refused with JOB_TYPE_SYSTEM_READ_ONLY.
+    # @param id [String] Job Type ID
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(ResponseEnvelope, Integer, Hash)>] ResponseEnvelope data, response status code and response headers
+    def delete_job_type_with_http_info(id, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: JobTypesApi.delete_job_type ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling JobTypesApi.delete_job_type"
+      end
+      # resource path
+      local_var_path = '/job-types/{id}'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ResponseEnvelope'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"JobTypesApi.delete_job_type",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:DELETE, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: JobTypesApi#delete_job_type\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
     # Get a job type
     # Returns one entry of the business's service catalog (job/work-order type) with its localized display name — e.g. an HVAC tune-up, drain cleaning or electrical inspection offering.
     # @param id [String] Job Type ID
@@ -138,6 +272,80 @@ module Crisphive
       data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
       if @api_client.config.debugging
         @api_client.config.logger.debug "API called: JobTypesApi#list_job_types\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Rename a job type or change its availability
+    # Edits a catalog entry in place. A rename applies to NEW bookings only: every job stores the job-type name it was booked with, so existing and completed jobs keep their original label.  Partial update: omit a field to keep it. `name` rejects \"\" because a type must stay identifiable, and must stay unique (JOB_TYPE_DUPLICATE). Setting `status` to inactive is the reversible way to take a type off the booking form; inactive types are refused for new job requests.  Default quote bundle: default_duration_minutes / default_mobilization_minutes / default_demobilization_minutes follow the same partial rule; omit to keep, 0 to clear, a value to set. Clearing the duration while a buffer stays is refused (JOB_TYPE_INVALID_DEFAULT_DURATION).  Rows the platform ships with (`is_system=true`, e.g. the default \"General\" type) keep their name and status read-only (JOB_TYPE_SYSTEM_READ_ONLY); their default quote bundle IS editable. Create your own type if you need different wording.
+    # @param id [String] Job Type ID
+    # @param job_type_update_request [JobTypeUpdateRequest] Job type
+    # @param [Hash] opts the optional parameters
+    # @return [ResponseEnvelope]
+    def update_job_type(id, job_type_update_request, opts = {})
+      data, _status_code, _headers = update_job_type_with_http_info(id, job_type_update_request, opts)
+      data
+    end
+
+    # Rename a job type or change its availability
+    # Edits a catalog entry in place. A rename applies to NEW bookings only: every job stores the job-type name it was booked with, so existing and completed jobs keep their original label.  Partial update: omit a field to keep it. &#x60;name&#x60; rejects \&quot;\&quot; because a type must stay identifiable, and must stay unique (JOB_TYPE_DUPLICATE). Setting &#x60;status&#x60; to inactive is the reversible way to take a type off the booking form; inactive types are refused for new job requests.  Default quote bundle: default_duration_minutes / default_mobilization_minutes / default_demobilization_minutes follow the same partial rule; omit to keep, 0 to clear, a value to set. Clearing the duration while a buffer stays is refused (JOB_TYPE_INVALID_DEFAULT_DURATION).  Rows the platform ships with (&#x60;is_system&#x3D;true&#x60;, e.g. the default \&quot;General\&quot; type) keep their name and status read-only (JOB_TYPE_SYSTEM_READ_ONLY); their default quote bundle IS editable. Create your own type if you need different wording.
+    # @param id [String] Job Type ID
+    # @param job_type_update_request [JobTypeUpdateRequest] Job type
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(ResponseEnvelope, Integer, Hash)>] ResponseEnvelope data, response status code and response headers
+    def update_job_type_with_http_info(id, job_type_update_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: JobTypesApi.update_job_type ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling JobTypesApi.update_job_type"
+      end
+      # verify the required parameter 'job_type_update_request' is set
+      if @api_client.config.client_side_validation && job_type_update_request.nil?
+        fail ArgumentError, "Missing the required parameter 'job_type_update_request' when calling JobTypesApi.update_job_type"
+      end
+      # resource path
+      local_var_path = '/job-types/{id}'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(job_type_update_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ResponseEnvelope'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"JobTypesApi.update_job_type",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:PUT, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: JobTypesApi#update_job_type\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
       end
       return data, status_code, headers
     end

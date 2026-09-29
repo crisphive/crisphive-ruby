@@ -42,7 +42,10 @@ module Crisphive
     # Leads this technician is a buddy of (set when creating a buddy; the technician is appended to each lead's buddy list). Optional; max 50 technician ids.
     attr_accessor :lead_ids
 
-    # At least one of phone/email is required (identity resolution key).
+    # Whether to send the new member the \"you have been added to {business}\" message (email when an email was supplied, SMS when a phone was, both when both). Omitted or true sends it; false stays silent. Set false for bulk imports so seeding a roster does not text everybody at once.
+    attr_accessor :notify
+
+    # Phone number in E.164 international format: a leading `+` and the country code, e.g. `+16135550188`. A bare national number (`6135550188`) is REJECTED with PHONE_INVALID — there is no default region to guess the country from. At least one of phone/email is required (identity resolution key).
     attr_accessor :phone
 
     # Service areas to assign the technician to. Optional; max 50. Discover via GET /service-areas.
@@ -91,6 +94,7 @@ module Crisphive
         :'job_title' => :'job_title',
         :'join_date' => :'join_date',
         :'lead_ids' => :'lead_ids',
+        :'notify' => :'notify',
         :'phone' => :'phone',
         :'service_area_ids' => :'service_area_ids',
         :'start_location_lat' => :'start_location_lat',
@@ -116,6 +120,7 @@ module Crisphive
         :'job_title' => :'String',
         :'join_date' => :'Date',
         :'lead_ids' => :'Array<String>',
+        :'notify' => :'Boolean',
         :'phone' => :'String',
         :'service_area_ids' => :'Array<String>',
         :'start_location_lat' => :'Float',
@@ -187,6 +192,10 @@ module Crisphive
         if (value = attributes[:'lead_ids']).is_a?(Array)
           self.lead_ids = value
         end
+      end
+
+      if attributes.key?(:'notify')
+        self.notify = attributes[:'notify']
       end
 
       if attributes.key?(:'phone')
@@ -464,6 +473,7 @@ module Crisphive
           job_title == o.job_title &&
           join_date == o.join_date &&
           lead_ids == o.lead_ids &&
+          notify == o.notify &&
           phone == o.phone &&
           service_area_ids == o.service_area_ids &&
           start_location_lat == o.start_location_lat &&
@@ -480,7 +490,7 @@ module Crisphive
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [address, assignment_tier, buddy_ids, business_group_id, email, full_name, job_title, join_date, lead_ids, phone, service_area_ids, start_location_lat, start_location_long, start_location_type].hash
+      [address, assignment_tier, buddy_ids, business_group_id, email, full_name, job_title, join_date, lead_ids, notify, phone, service_area_ids, start_location_lat, start_location_long, start_location_type].hash
     end
 
     # Builds the object from hash

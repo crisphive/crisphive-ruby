@@ -24,6 +24,9 @@ module Crisphive
     # City / locality for the area. Empty if unused.
     attr_accessor :city
 
+    # Country for the area. Empty if unused.
+    attr_accessor :country
+
     # County for the area. Empty if unused.
     attr_accessor :county
 
@@ -45,6 +48,9 @@ module Crisphive
     # Postal / ZIP code for the area. Empty if unused.
     attr_accessor :postal_code
 
+    # State / province for the area. Empty if unused.
+    attr_accessor :state_province
+
     # When the service area was last modified (RFC3339).
     attr_accessor :updated_at
 
@@ -54,6 +60,7 @@ module Crisphive
         :'boundary' => :'boundary',
         :'business_id' => :'business_id',
         :'city' => :'city',
+        :'country' => :'country',
         :'county' => :'county',
         :'created_at' => :'created_at',
         :'description' => :'description',
@@ -61,6 +68,7 @@ module Crisphive
         :'id' => :'id',
         :'name' => :'name',
         :'postal_code' => :'postal_code',
+        :'state_province' => :'state_province',
         :'updated_at' => :'updated_at'
       }
     end
@@ -76,6 +84,7 @@ module Crisphive
         :'boundary' => :'Object',
         :'business_id' => :'String',
         :'city' => :'String',
+        :'country' => :'String',
         :'county' => :'String',
         :'created_at' => :'Time',
         :'description' => :'String',
@@ -83,6 +92,7 @@ module Crisphive
         :'id' => :'String',
         :'name' => :'String',
         :'postal_code' => :'String',
+        :'state_province' => :'String',
         :'updated_at' => :'Time'
       }
     end
@@ -120,6 +130,10 @@ module Crisphive
         self.city = attributes[:'city']
       end
 
+      if attributes.key?(:'country')
+        self.country = attributes[:'country']
+      end
+
       if attributes.key?(:'county')
         self.county = attributes[:'county']
       end
@@ -146,6 +160,10 @@ module Crisphive
 
       if attributes.key?(:'postal_code')
         self.postal_code = attributes[:'postal_code']
+      end
+
+      if attributes.key?(:'state_province')
+        self.state_province = attributes[:'state_province']
       end
 
       if attributes.key?(:'updated_at')
@@ -176,6 +194,7 @@ module Crisphive
           boundary == o.boundary &&
           business_id == o.business_id &&
           city == o.city &&
+          country == o.country &&
           county == o.county &&
           created_at == o.created_at &&
           description == o.description &&
@@ -183,6 +202,7 @@ module Crisphive
           id == o.id &&
           name == o.name &&
           postal_code == o.postal_code &&
+          state_province == o.state_province &&
           updated_at == o.updated_at
     end
 
@@ -195,7 +215,7 @@ module Crisphive
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [boundary, business_id, city, county, created_at, description, district, id, name, postal_code, updated_at].hash
+      [boundary, business_id, city, country, county, created_at, description, district, id, name, postal_code, state_province, updated_at].hash
     end
 
     # Builds the object from hash

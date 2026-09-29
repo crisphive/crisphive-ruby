@@ -15,13 +15,19 @@ require 'time'
 
 module Crisphive
   class JobRequestMoveWarning
-    # Warning kind: TECH_NOT_FEASIBLE | PUSHED_OUTSIDE_WINDOW | OVERTIME | TIME_OFF_OVERLAP | VEHICLE_CONFLICT.
+    # Every hard filter that refused the technician, most-structural first (TECH_NOT_FEASIBLE only). blockers[0] is the row Reason is derived from.
+    attr_accessor :blockers
+
+    # Warning kind: MOVED_OUTSIDE_WINDOW | TECH_NOT_FEASIBLE | PUSHED_OUTSIDE_WINDOW | OVERTIME | TIME_OFF_OVERLAP | CALENDAR_OVERLAP | VEHICLE_CONFLICT | AFTER_HOURS.  CALENDAR_OVERLAP is a SEPARATE value from TIME_OFF_OVERLAP on purpose: approved time off is a record the coordinator can open, a personal calendar event is one we cannot see at all.
     attr_accessor :code
+
+    # MOVED_OUTSIDE_WINDOW only: the customer-confirmed business-local ranges the job was booked into, so the board can show what the customer requested next to the override warning.
+    attr_accessor :customer_window
 
     # First same-day time the target technician CAN be on site (UTC) — only with reason=cannot_arrive_in_time; suggest it as the drop slot.
     attr_accessor :earliest_feasible_at
 
-    # The displaced job this warning is about (per-job warnings only).
+    # The job this warning is about (per-job warnings only).
     attr_accessor :job_id
 
     # Human-readable explanation.
@@ -30,7 +36,7 @@ module Crisphive
     # OVERTIME only: the largest overrun in minutes past the working-day end. Omitted otherwise.
     attr_accessor :minutes
 
-    # Machine cause, TECH_NOT_FEASIBLE only: cannot_arrive_in_time (see earliest_feasible_at) | missing_required_skills | not_available_today | not_lead_tier.
+    # Machine cause, TECH_NOT_FEASIBLE only. Blockers[0].kind, or not_available_today when the diagnosis was unavailable. EXTEND-ONLY: a client switching on this MUST carry a default branch.  calendar_conflict is the one value NOT in smartassign.BlockerKind: it is raised by the crew-assign path, never by ExplainInfeasibility, so it never appears in Blockers. A busy window on the technician's own PERSONAL calendar covers the visit. It is kept separate from on_time_off because approved leave is a record the coordinator can open and weigh, while this one is the obstacle we deliberately cannot see, so the action is a phone call. It may arrive alongside earliest_feasible_at.
     attr_accessor :reason
 
     class EnumAttributeValidator
@@ -58,7 +64,9 @@ module Crisphive
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
+        :'blockers' => :'blockers',
         :'code' => :'code',
+        :'customer_window' => :'customer_window',
         :'earliest_feasible_at' => :'earliest_feasible_at',
         :'job_id' => :'job_id',
         :'message' => :'message',
@@ -75,7 +83,9 @@ module Crisphive
     # Attribute type mapping.
     def self.openapi_types
       {
+        :'blockers' => :'Array<JobRequestBlocker>',
         :'code' => :'String',
+        :'customer_window' => :'Array<JobDateBusinessRange>',
         :'earliest_feasible_at' => :'Time',
         :'job_id' => :'String',
         :'message' => :'String',
@@ -105,8 +115,20 @@ module Crisphive
         h[k.to_sym] = v
       }
 
+      if attributes.key?(:'blockers')
+        if (value = attributes[:'blockers']).is_a?(Array)
+          self.blockers = value
+        end
+      end
+
       if attributes.key?(:'code')
         self.code = attributes[:'code']
+      end
+
+      if attributes.key?(:'customer_window')
+        if (value = attributes[:'customer_window']).is_a?(Array)
+          self.customer_window = value
+        end
       end
 
       if attributes.key?(:'earliest_feasible_at')
@@ -142,9 +164,9 @@ module Crisphive
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      code_validator = EnumAttributeValidator.new('String', ["TECH_NOT_FEASIBLE", "PUSHED_OUTSIDE_WINDOW", "OVERTIME", "TIME_OFF_OVERLAP", "VEHICLE_CONFLICT"])
+      code_validator = EnumAttributeValidator.new('String', ["MOVED_OUTSIDE_WINDOW", "TECH_NOT_FEASIBLE", "PUSHED_OUTSIDE_WINDOW", "OVERTIME", "TIME_OFF_OVERLAP", "CALENDAR_OVERLAP", "VEHICLE_CONFLICT", "AFTER_HOURS"])
       return false unless code_validator.valid?(@code)
-      reason_validator = EnumAttributeValidator.new('String', ["cannot_arrive_in_time", "missing_required_skills", "not_available_today", "not_lead_tier"])
+      reason_validator = EnumAttributeValidator.new('String', ["outside_service_area", "missing_required_skills", "not_lead_tier", "no_working_day", "on_time_off", "off_shift", "occupied", "visit_too_long", "cannot_arrive_in_time", "calendar_conflict", "not_available_today"])
       return false unless reason_validator.valid?(@reason)
       true
     end
@@ -152,7 +174,7 @@ module Crisphive
     # Custom attribute writer method checking allowed values (enum).
     # @param [Object] code Object to be assigned
     def code=(code)
-      validator = EnumAttributeValidator.new('String', ["TECH_NOT_FEASIBLE", "PUSHED_OUTSIDE_WINDOW", "OVERTIME", "TIME_OFF_OVERLAP", "VEHICLE_CONFLICT"])
+      validator = EnumAttributeValidator.new('String', ["MOVED_OUTSIDE_WINDOW", "TECH_NOT_FEASIBLE", "PUSHED_OUTSIDE_WINDOW", "OVERTIME", "TIME_OFF_OVERLAP", "CALENDAR_OVERLAP", "VEHICLE_CONFLICT", "AFTER_HOURS"])
       unless validator.valid?(code)
         fail ArgumentError, "invalid value for \"code\", must be one of #{validator.allowable_values}."
       end
@@ -162,7 +184,7 @@ module Crisphive
     # Custom attribute writer method checking allowed values (enum).
     # @param [Object] reason Object to be assigned
     def reason=(reason)
-      validator = EnumAttributeValidator.new('String', ["cannot_arrive_in_time", "missing_required_skills", "not_available_today", "not_lead_tier"])
+      validator = EnumAttributeValidator.new('String', ["outside_service_area", "missing_required_skills", "not_lead_tier", "no_working_day", "on_time_off", "off_shift", "occupied", "visit_too_long", "cannot_arrive_in_time", "calendar_conflict", "not_available_today"])
       unless validator.valid?(reason)
         fail ArgumentError, "invalid value for \"reason\", must be one of #{validator.allowable_values}."
       end
@@ -174,7 +196,9 @@ module Crisphive
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
+          blockers == o.blockers &&
           code == o.code &&
+          customer_window == o.customer_window &&
           earliest_feasible_at == o.earliest_feasible_at &&
           job_id == o.job_id &&
           message == o.message &&
@@ -191,7 +215,7 @@ module Crisphive
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [code, earliest_feasible_at, job_id, message, minutes, reason].hash
+      [blockers, code, customer_window, earliest_feasible_at, job_id, message, minutes, reason].hash
     end
 
     # Builds the object from hash

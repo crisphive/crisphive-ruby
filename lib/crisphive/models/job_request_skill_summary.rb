@@ -27,7 +27,7 @@ module Crisphive
     # Whether the skill is currently active.
     attr_accessor :is_active
 
-    # Skill display name (resolved to the request locale).
+    # Skill display name (canonical; skill names carry no locale translations, so this is NOT resolved to the request locale).
     attr_accessor :name
 
     # Attribute mapping from ruby-style variable name to JSON key.

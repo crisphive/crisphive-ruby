@@ -27,10 +27,10 @@ module Crisphive
     # IANA timezone of the customer (customer-facing slot times render in this zone).
     attr_accessor :customer_timezone
 
-    # Offerable days in date order, each with its slot grid. Only slots with at least one feasible technician are offered.
+    # Offerable days in date order, each with its slot grid. Only future slots with at least one feasible technician are offered.
     attr_accessor :days
 
-    # Reserved UI hint; currently always false.
+    # True when the customer's originally chosen dates yield NO offerable slot — either they are already in the past, or no technician is available on them. `days` then holds fresh SUGGESTED days instead: the same time-of-day periods, scanned from the day after their last chosen date (never before today) across at most 7 days, offering the first 3 days that have availability (may be empty when nothing was found — tell the customer no alternative exists within the week). The FE should surface that their chosen dates didn't work out and these are new suggestions.
     attr_accessor :is_suggested
 
     # Job identifier — the human-readable short code when present, else the job UUID.

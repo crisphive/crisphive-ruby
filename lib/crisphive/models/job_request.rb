@@ -63,6 +63,9 @@ module Crisphive
     # Free-text job description; null if none.
     attr_accessor :description
 
+    # Driving distance from the technician's start location to the job site, in kilometres. Detail reads only — omitted when unknown. Named _km to match distance_km on the nearby-technician and emergency-candidate DTOs.
+    attr_accessor :distance_km
+
     # Job request UUID.
     attr_accessor :id
 
@@ -155,6 +158,7 @@ module Crisphive
         :'customer_url' => :'customer_url',
         :'deleted_at' => :'deleted_at',
         :'description' => :'description',
+        :'distance_km' => :'distance_km',
         :'id' => :'id',
         :'job_type_id' => :'job_type_id',
         :'job_type_name' => :'job_type_name',
@@ -199,6 +203,7 @@ module Crisphive
         :'customer_url' => :'String',
         :'deleted_at' => :'Time',
         :'description' => :'String',
+        :'distance_km' => :'Float',
         :'id' => :'String',
         :'job_type_id' => :'String',
         :'job_type_name' => :'String',
@@ -306,6 +311,10 @@ module Crisphive
 
       if attributes.key?(:'description')
         self.description = attributes[:'description']
+      end
+
+      if attributes.key?(:'distance_km')
+        self.distance_km = attributes[:'distance_km']
       end
 
       if attributes.key?(:'id')
@@ -429,6 +438,7 @@ module Crisphive
           customer_url == o.customer_url &&
           deleted_at == o.deleted_at &&
           description == o.description &&
+          distance_km == o.distance_km &&
           id == o.id &&
           job_type_id == o.job_type_id &&
           job_type_name == o.job_type_name &&
@@ -457,7 +467,7 @@ module Crisphive
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [action_audit, address, archive, assigned_vehicle, assignment, attention, business_id, completed_at, completed_by_user_id, created_at, crew, current_status, customer, customer_url, deleted_at, description, id, job_type_id, job_type_name, next_actions, priority, quote, rating, schedule, short_code, skills, sla_deadline, sla_escalated_at, sla_warned_at, status_version, updated_at, workflow_id, workflow_name].hash
+      [action_audit, address, archive, assigned_vehicle, assignment, attention, business_id, completed_at, completed_by_user_id, created_at, crew, current_status, customer, customer_url, deleted_at, description, distance_km, id, job_type_id, job_type_name, next_actions, priority, quote, rating, schedule, short_code, skills, sla_deadline, sla_escalated_at, sla_warned_at, status_version, updated_at, workflow_id, workflow_name].hash
     end
 
     # Builds the object from hash

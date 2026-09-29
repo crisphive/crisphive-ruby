@@ -19,6 +19,280 @@ module Crisphive
     def initialize(api_client = ApiClient.default)
       @api_client = api_client
     end
+    # Create a skill
+    # Creates a skill under the given category. New skills are active by default. Skill names must be unique within their category.
+    # @param id [String] Skill category ID (UUID)
+    # @param skill_create_request [SkillCreateRequest] Skill details (name max 200 chars, description max 4000 chars)
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key replays the original response (header Idempotent-Replayed: true) instead of re-running the operation. Reusing a key with a different body returns 422 IDEMPOTENCY_KEY_REUSE.
+    # @return [CreateSkill200Response]
+    def create_skill(id, skill_create_request, opts = {})
+      data, _status_code, _headers = create_skill_with_http_info(id, skill_create_request, opts)
+      data
+    end
+
+    # Create a skill
+    # Creates a skill under the given category. New skills are active by default. Skill names must be unique within their category.
+    # @param id [String] Skill category ID (UUID)
+    # @param skill_create_request [SkillCreateRequest] Skill details (name max 200 chars, description max 4000 chars)
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key replays the original response (header Idempotent-Replayed: true) instead of re-running the operation. Reusing a key with a different body returns 422 IDEMPOTENCY_KEY_REUSE.
+    # @return [Array<(CreateSkill200Response, Integer, Hash)>] CreateSkill200Response data, response status code and response headers
+    def create_skill_with_http_info(id, skill_create_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: BusinessSkillApi.create_skill ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling BusinessSkillApi.create_skill"
+      end
+      # verify the required parameter 'skill_create_request' is set
+      if @api_client.config.client_side_validation && skill_create_request.nil?
+        fail ArgumentError, "Missing the required parameter 'skill_create_request' when calling BusinessSkillApi.create_skill"
+      end
+      # resource path
+      local_var_path = '/skill-categories/{id}/skills'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+      header_params[:'Idempotency-Key'] = opts[:'idempotency_key'] if !opts[:'idempotency_key'].nil?
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(skill_create_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'CreateSkill200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"BusinessSkillApi.create_skill",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: BusinessSkillApi#create_skill\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Create a skill category
+    # Creates a skill category for the current business. Categories group skills (e.g. \"Plumbing\", \"Electrical\"). Names must be unique within a business.
+    # @param skill_category_create_request [SkillCategoryCreateRequest] Category name (max 200 chars)
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key replays the original response (header Idempotent-Replayed: true) instead of re-running the operation. Reusing a key with a different body returns 422 IDEMPOTENCY_KEY_REUSE.
+    # @return [CreateSkillCategory200Response]
+    def create_skill_category(skill_category_create_request, opts = {})
+      data, _status_code, _headers = create_skill_category_with_http_info(skill_category_create_request, opts)
+      data
+    end
+
+    # Create a skill category
+    # Creates a skill category for the current business. Categories group skills (e.g. \&quot;Plumbing\&quot;, \&quot;Electrical\&quot;). Names must be unique within a business.
+    # @param skill_category_create_request [SkillCategoryCreateRequest] Category name (max 200 chars)
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key replays the original response (header Idempotent-Replayed: true) instead of re-running the operation. Reusing a key with a different body returns 422 IDEMPOTENCY_KEY_REUSE.
+    # @return [Array<(CreateSkillCategory200Response, Integer, Hash)>] CreateSkillCategory200Response data, response status code and response headers
+    def create_skill_category_with_http_info(skill_category_create_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: BusinessSkillApi.create_skill_category ...'
+      end
+      # verify the required parameter 'skill_category_create_request' is set
+      if @api_client.config.client_side_validation && skill_category_create_request.nil?
+        fail ArgumentError, "Missing the required parameter 'skill_category_create_request' when calling BusinessSkillApi.create_skill_category"
+      end
+      # resource path
+      local_var_path = '/skill-categories'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+      header_params[:'Idempotency-Key'] = opts[:'idempotency_key'] if !opts[:'idempotency_key'].nil?
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(skill_category_create_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'CreateSkillCategory200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"BusinessSkillApi.create_skill_category",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: BusinessSkillApi#create_skill_category\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Delete a skill
+    # Permanently deletes a skill. Returns SKILL_HAS_MEMBERS (409) if any active technicians are still assigned — unassign all technicians first.
+    # @param id [String] Skill ID (UUID)
+    # @param [Hash] opts the optional parameters
+    # @return [ResponseEnvelope]
+    def delete_skill(id, opts = {})
+      data, _status_code, _headers = delete_skill_with_http_info(id, opts)
+      data
+    end
+
+    # Delete a skill
+    # Permanently deletes a skill. Returns SKILL_HAS_MEMBERS (409) if any active technicians are still assigned — unassign all technicians first.
+    # @param id [String] Skill ID (UUID)
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(ResponseEnvelope, Integer, Hash)>] ResponseEnvelope data, response status code and response headers
+    def delete_skill_with_http_info(id, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: BusinessSkillApi.delete_skill ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling BusinessSkillApi.delete_skill"
+      end
+      # resource path
+      local_var_path = '/skills/{id}'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ResponseEnvelope'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"BusinessSkillApi.delete_skill",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:DELETE, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: BusinessSkillApi#delete_skill\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Delete a skill category
+    # Permanently deletes a skill category. Returns SKILL_CATEGORY_NOT_EMPTY (409) if any skills still belong to the category — remove or move all skills first.
+    # @param id [String] Skill category ID (UUID)
+    # @param [Hash] opts the optional parameters
+    # @return [ResponseEnvelope]
+    def delete_skill_category(id, opts = {})
+      data, _status_code, _headers = delete_skill_category_with_http_info(id, opts)
+      data
+    end
+
+    # Delete a skill category
+    # Permanently deletes a skill category. Returns SKILL_CATEGORY_NOT_EMPTY (409) if any skills still belong to the category — remove or move all skills first.
+    # @param id [String] Skill category ID (UUID)
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(ResponseEnvelope, Integer, Hash)>] ResponseEnvelope data, response status code and response headers
+    def delete_skill_category_with_http_info(id, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: BusinessSkillApi.delete_skill_category ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling BusinessSkillApi.delete_skill_category"
+      end
+      # resource path
+      local_var_path = '/skill-categories/{id}'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ResponseEnvelope'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"BusinessSkillApi.delete_skill_category",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:DELETE, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: BusinessSkillApi#delete_skill_category\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
     # List skill categories
     # Returns paginated skill categories — how the business groups technician qualifications by trade or specialty (e.g. HVAC, plumbing, electrical) — ordered alphabetically.
     # @param [Hash] opts the optional parameters
@@ -350,6 +624,80 @@ module Crisphive
       data, status_code, headers = @api_client.call_api(:PATCH, local_var_path, new_options)
       if @api_client.config.debugging
         @api_client.config.logger.debug "API called: BusinessSkillApi#replace_technician_skills\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Update a skill
+    # Updates a skill's name, description, and/or active status. `is_active` is optional — omit the field entirely to keep the current value; send `false` to deactivate or `true` to reactivate. Deactivating a skill prevents new technician assignments but does not remove existing ones.
+    # @param id [String] Skill ID (UUID)
+    # @param skill_update_request [SkillUpdateRequest] Fields to update
+    # @param [Hash] opts the optional parameters
+    # @return [ResponseEnvelope]
+    def update_skill(id, skill_update_request, opts = {})
+      data, _status_code, _headers = update_skill_with_http_info(id, skill_update_request, opts)
+      data
+    end
+
+    # Update a skill
+    # Updates a skill&#39;s name, description, and/or active status. &#x60;is_active&#x60; is optional — omit the field entirely to keep the current value; send &#x60;false&#x60; to deactivate or &#x60;true&#x60; to reactivate. Deactivating a skill prevents new technician assignments but does not remove existing ones.
+    # @param id [String] Skill ID (UUID)
+    # @param skill_update_request [SkillUpdateRequest] Fields to update
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(ResponseEnvelope, Integer, Hash)>] ResponseEnvelope data, response status code and response headers
+    def update_skill_with_http_info(id, skill_update_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: BusinessSkillApi.update_skill ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling BusinessSkillApi.update_skill"
+      end
+      # verify the required parameter 'skill_update_request' is set
+      if @api_client.config.client_side_validation && skill_update_request.nil?
+        fail ArgumentError, "Missing the required parameter 'skill_update_request' when calling BusinessSkillApi.update_skill"
+      end
+      # resource path
+      local_var_path = '/skills/{id}'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(skill_update_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ResponseEnvelope'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"BusinessSkillApi.update_skill",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:PUT, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: BusinessSkillApi#update_skill\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
       end
       return data, status_code, headers
     end

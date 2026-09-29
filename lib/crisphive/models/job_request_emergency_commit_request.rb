@@ -15,6 +15,9 @@ require 'time'
 
 module Crisphive
   class JobRequestEmergencyCommitRequest
+    # Place this P0 outside working hours / approved time-off — you have phoned the technician and they agreed. Drops the non-working-day rejection; the response then carries an AFTER_HOURS warning. Double-booking, service area, required skills and the lead-tier rule still reject.
+    attr_accessor :after_hours_override
+
     # Fate of displaced jobs: reschedule (default) or reassign — must match the preview.
     attr_accessor :displacement_mode
 
@@ -61,6 +64,7 @@ module Crisphive
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
+        :'after_hours_override' => :'after_hours_override',
         :'displacement_mode' => :'displacement_mode',
         :'emergency_expected_version' => :'emergency_expected_version',
         :'emergency_job_id' => :'emergency_job_id',
@@ -79,6 +83,7 @@ module Crisphive
     # Attribute type mapping.
     def self.openapi_types
       {
+        :'after_hours_override' => :'Boolean',
         :'displacement_mode' => :'String',
         :'emergency_expected_version' => :'Integer',
         :'emergency_job_id' => :'String',
@@ -109,6 +114,10 @@ module Crisphive
         end
         h[k.to_sym] = v
       }
+
+      if attributes.key?(:'after_hours_override')
+        self.after_hours_override = attributes[:'after_hours_override']
+      end
 
       if attributes.key?(:'displacement_mode')
         self.displacement_mode = attributes[:'displacement_mode']
@@ -213,6 +222,7 @@ module Crisphive
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
+          after_hours_override == o.after_hours_override &&
           displacement_mode == o.displacement_mode &&
           emergency_expected_version == o.emergency_expected_version &&
           emergency_job_id == o.emergency_job_id &&
@@ -231,7 +241,7 @@ module Crisphive
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [displacement_mode, emergency_expected_version, emergency_job_id, expected_move_ids, mode, start_at, technician_id].hash
+      [after_hours_override, displacement_mode, emergency_expected_version, emergency_job_id, expected_move_ids, mode, start_at, technician_id].hash
     end
 
     # Builds the object from hash

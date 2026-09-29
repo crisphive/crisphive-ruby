@@ -30,6 +30,12 @@ module Crisphive
     # The service area this customer falls in, if resolved; otherwise null.
     attr_accessor :service_area
 
+    # True when the customer has explicitly consented to receive SMS. SMS notifications to this customer are suppressed while false.
+    attr_accessor :sms_opt_in
+
+    # When SMS consent was granted (RFC3339); null when sms_opt_in is false.
+    attr_accessor :sms_opt_in_at
+
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
@@ -37,7 +43,9 @@ module Crisphive
         :'email' => :'email',
         :'phone' => :'phone',
         :'preferred_technician' => :'preferred_technician',
-        :'service_area' => :'service_area'
+        :'service_area' => :'service_area',
+        :'sms_opt_in' => :'sms_opt_in',
+        :'sms_opt_in_at' => :'sms_opt_in_at'
       }
     end
 
@@ -52,8 +60,10 @@ module Crisphive
         :'address' => :'CustomerAddress',
         :'email' => :'String',
         :'phone' => :'String',
-        :'preferred_technician' => :'Technician',
-        :'service_area' => :'ServiceArea'
+        :'preferred_technician' => :'CustomerTechnicianRef',
+        :'service_area' => :'CustomerServiceAreaRef',
+        :'sms_opt_in' => :'Boolean',
+        :'sms_opt_in_at' => :'Time'
       }
     end
 
@@ -97,6 +107,14 @@ module Crisphive
       if attributes.key?(:'service_area')
         self.service_area = attributes[:'service_area']
       end
+
+      if attributes.key?(:'sms_opt_in')
+        self.sms_opt_in = attributes[:'sms_opt_in']
+      end
+
+      if attributes.key?(:'sms_opt_in_at')
+        self.sms_opt_in_at = attributes[:'sms_opt_in_at']
+      end
     end
 
     # Show invalid properties with the reasons. Usually used together with valid?
@@ -123,7 +141,9 @@ module Crisphive
           email == o.email &&
           phone == o.phone &&
           preferred_technician == o.preferred_technician &&
-          service_area == o.service_area
+          service_area == o.service_area &&
+          sms_opt_in == o.sms_opt_in &&
+          sms_opt_in_at == o.sms_opt_in_at
     end
 
     # @see the `==` method
@@ -135,7 +155,7 @@ module Crisphive
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [address, email, phone, preferred_technician, service_area].hash
+      [address, email, phone, preferred_technician, service_area, sms_opt_in, sms_opt_in_at].hash
     end
 
     # Builds the object from hash

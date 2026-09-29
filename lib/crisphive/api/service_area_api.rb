@@ -19,6 +19,140 @@ module Crisphive
     def initialize(api_client = ApiClient.default)
       @api_client = api_client
     end
+    # Define a territory the business serves
+    # Creates a service area: a named region used as a HARD filter when deciding who can take a job. A technician assigned to no area covering the job's address is never offered by listNearbyTechnicians, listMatchingSlots or listCrewCandidates, and never auto-assigned at confirm, whatever their skills or availability say.  `name` is the only required field and must be unique (SERVICE_AREA_DUPLICATE_NAME). Coverage is matched two ways: with a `boundary` (GeoJSON polygon), a geocoded address must fall inside the polygon; without one, the area matches addresses by equality on its postal_code, city or district. A polygon is the precise option; the administrative fields are the fallback, and also what matches jobs whose address could not be geocoded. An invalid polygon is refused with SERVICE_AREA_INVALID_BOUNDARY.  Creating the area does not staff it. Assign technicians with replaceTechnicianServiceAreas, or pass `service_area_ids` to createTechnician.  Send an Idempotency-Key header (the `idempotency_key` argument over MCP) so a retry does not create a duplicate area.
+    # @param service_area_create_request [ServiceAreaCreateRequest] Service area details
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key replays the original response (header Idempotent-Replayed: true) instead of re-running the operation. Reusing a key with a different body returns 422 IDEMPOTENCY_KEY_REUSE.
+    # @return [CreateServiceArea200Response]
+    def create_service_area(service_area_create_request, opts = {})
+      data, _status_code, _headers = create_service_area_with_http_info(service_area_create_request, opts)
+      data
+    end
+
+    # Define a territory the business serves
+    # Creates a service area: a named region used as a HARD filter when deciding who can take a job. A technician assigned to no area covering the job&#39;s address is never offered by listNearbyTechnicians, listMatchingSlots or listCrewCandidates, and never auto-assigned at confirm, whatever their skills or availability say.  &#x60;name&#x60; is the only required field and must be unique (SERVICE_AREA_DUPLICATE_NAME). Coverage is matched two ways: with a &#x60;boundary&#x60; (GeoJSON polygon), a geocoded address must fall inside the polygon; without one, the area matches addresses by equality on its postal_code, city or district. A polygon is the precise option; the administrative fields are the fallback, and also what matches jobs whose address could not be geocoded. An invalid polygon is refused with SERVICE_AREA_INVALID_BOUNDARY.  Creating the area does not staff it. Assign technicians with replaceTechnicianServiceAreas, or pass &#x60;service_area_ids&#x60; to createTechnician.  Send an Idempotency-Key header (the &#x60;idempotency_key&#x60; argument over MCP) so a retry does not create a duplicate area.
+    # @param service_area_create_request [ServiceAreaCreateRequest] Service area details
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key replays the original response (header Idempotent-Replayed: true) instead of re-running the operation. Reusing a key with a different body returns 422 IDEMPOTENCY_KEY_REUSE.
+    # @return [Array<(CreateServiceArea200Response, Integer, Hash)>] CreateServiceArea200Response data, response status code and response headers
+    def create_service_area_with_http_info(service_area_create_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: ServiceAreaApi.create_service_area ...'
+      end
+      # verify the required parameter 'service_area_create_request' is set
+      if @api_client.config.client_side_validation && service_area_create_request.nil?
+        fail ArgumentError, "Missing the required parameter 'service_area_create_request' when calling ServiceAreaApi.create_service_area"
+      end
+      # resource path
+      local_var_path = '/service-areas'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+      header_params[:'Idempotency-Key'] = opts[:'idempotency_key'] if !opts[:'idempotency_key'].nil?
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(service_area_create_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'CreateServiceArea200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"ServiceAreaApi.create_service_area",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: ServiceAreaApi#create_service_area\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Stop serving a territory
+    # Soft-deletes the service area: it disappears from listServiceAreas and stops counting for coverage immediately. Technician assignments to it are left in place but no longer grant coverage.  The consequence is easy to underestimate: technicians whose only coverage was this area become unmatchable for addresses inside it. Jobs already assigned keep their technician, but any re-plan (reassign, board move, confirm of a pending job, the slot picker) can find no feasible crew there. Before deleting, re-check listCrewCandidates on upcoming jobs in that territory.  If you are reshaping coverage rather than withdrawing from it, edit the polygon or postal/city fields with updateServiceArea instead; that keeps the area and its technician assignments working.
+    # @param id [String] Service Area ID
+    # @param [Hash] opts the optional parameters
+    # @return [ResponseEnvelope]
+    def delete_service_area(id, opts = {})
+      data, _status_code, _headers = delete_service_area_with_http_info(id, opts)
+      data
+    end
+
+    # Stop serving a territory
+    # Soft-deletes the service area: it disappears from listServiceAreas and stops counting for coverage immediately. Technician assignments to it are left in place but no longer grant coverage.  The consequence is easy to underestimate: technicians whose only coverage was this area become unmatchable for addresses inside it. Jobs already assigned keep their technician, but any re-plan (reassign, board move, confirm of a pending job, the slot picker) can find no feasible crew there. Before deleting, re-check listCrewCandidates on upcoming jobs in that territory.  If you are reshaping coverage rather than withdrawing from it, edit the polygon or postal/city fields with updateServiceArea instead; that keeps the area and its technician assignments working.
+    # @param id [String] Service Area ID
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(ResponseEnvelope, Integer, Hash)>] ResponseEnvelope data, response status code and response headers
+    def delete_service_area_with_http_info(id, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: ServiceAreaApi.delete_service_area ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling ServiceAreaApi.delete_service_area"
+      end
+      # resource path
+      local_var_path = '/service-areas/{id}'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ResponseEnvelope'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"ServiceAreaApi.delete_service_area",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:DELETE, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: ServiceAreaApi#delete_service_area\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
     # Get a service area
     # Returns one service area — a geographic coverage zone (service territory) the business operates in, with its name and geometry metadata. Reference its UUID as `service_area_id` on customer records for territory-aware dispatch.
     # @param id [String] Service Area ID
@@ -141,6 +275,80 @@ module Crisphive
       data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
       if @api_client.config.debugging
         @api_client.config.logger.debug "API called: ServiceAreaApi#list_service_areas\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Adjust a territory's details or its boundary
+    # Edits a service area in place, keeping its id and every technician already assigned to it.  Partial update: omit a field to keep it, send \"\" to clear an optional text field; `name` rejects \"\". `boundary` is the one to watch: omitting it KEEPS the stored polygon, while sending one REPLACES it outright (no partial merge of geometry). This tool cannot remove a polygon once set.  A boundary or postal/city change takes effect for every NEW matching decision (quote checks, confirm, reassign, board moves, slot pickers), including for jobs already on the calendar when they are next re-planned. Jobs already assigned are not re-evaluated automatically, so after moving an edge, re-check listCrewCandidates on upcoming jobs near it.
+    # @param id [String] Service Area ID
+    # @param service_area_update_request [ServiceAreaUpdateRequest] Service area details
+    # @param [Hash] opts the optional parameters
+    # @return [ResponseEnvelope]
+    def update_service_area(id, service_area_update_request, opts = {})
+      data, _status_code, _headers = update_service_area_with_http_info(id, service_area_update_request, opts)
+      data
+    end
+
+    # Adjust a territory&#39;s details or its boundary
+    # Edits a service area in place, keeping its id and every technician already assigned to it.  Partial update: omit a field to keep it, send \&quot;\&quot; to clear an optional text field; &#x60;name&#x60; rejects \&quot;\&quot;. &#x60;boundary&#x60; is the one to watch: omitting it KEEPS the stored polygon, while sending one REPLACES it outright (no partial merge of geometry). This tool cannot remove a polygon once set.  A boundary or postal/city change takes effect for every NEW matching decision (quote checks, confirm, reassign, board moves, slot pickers), including for jobs already on the calendar when they are next re-planned. Jobs already assigned are not re-evaluated automatically, so after moving an edge, re-check listCrewCandidates on upcoming jobs near it.
+    # @param id [String] Service Area ID
+    # @param service_area_update_request [ServiceAreaUpdateRequest] Service area details
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(ResponseEnvelope, Integer, Hash)>] ResponseEnvelope data, response status code and response headers
+    def update_service_area_with_http_info(id, service_area_update_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: ServiceAreaApi.update_service_area ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling ServiceAreaApi.update_service_area"
+      end
+      # verify the required parameter 'service_area_update_request' is set
+      if @api_client.config.client_side_validation && service_area_update_request.nil?
+        fail ArgumentError, "Missing the required parameter 'service_area_update_request' when calling ServiceAreaApi.update_service_area"
+      end
+      # resource path
+      local_var_path = '/service-areas/{id}'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(service_area_update_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ResponseEnvelope'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"ServiceAreaApi.update_service_area",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:PUT, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: ServiceAreaApi#update_service_area\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
       end
       return data, status_code, headers
     end

@@ -57,11 +57,17 @@ module Crisphive
     # Leads this technician is a buddy of (id + name).
     attr_accessor :leads
 
+    # Set (RFC3339) only when the member RESIGNED themselves; null otherwise.  It is what separates the two meanings of `status: \"deactive\"`: with `left_at` set the member chose to leave (\"Đã nghỉ việc\"), with it null the business suspended them (\"Tạm khoá\"). Render them differently — the roster otherwise shows somebody who resigned exactly like somebody who was disciplined. Cleared when they are reactivated.
+    attr_accessor :left_at
+
     # Phone number in the form it was supplied; null if not set.
     attr_accessor :phone
 
-    # Resolved role/group name (e.g. \"Technician\", \"Owner\").
+    # Resolved role/group name, localized to the request locale (e.g. \"Technician\", \"기술자\").
     attr_accessor :role
+
+    # Stable machine key of the role for SYSTEM groups; empty for custom (business-authored) groups. Compare role-specific client behavior against THIS, never against the localized role name.
+    attr_accessor :role_key
 
     # Service areas this technician is assigned to (id + name).
     attr_accessor :service_areas
@@ -126,8 +132,10 @@ module Crisphive
         :'join_date' => :'join_date',
         :'last_login_at' => :'last_login_at',
         :'leads' => :'leads',
+        :'left_at' => :'left_at',
         :'phone' => :'phone',
         :'role' => :'role',
+        :'role_key' => :'role_key',
         :'service_areas' => :'service_areas',
         :'start_location_lat' => :'start_location_lat',
         :'start_location_long' => :'start_location_long',
@@ -161,8 +169,10 @@ module Crisphive
         :'join_date' => :'Date',
         :'last_login_at' => :'Time',
         :'leads' => :'Array<TechnicianLeadRef>',
+        :'left_at' => :'Time',
         :'phone' => :'String',
         :'role' => :'String',
+        :'role_key' => :'String',
         :'service_areas' => :'Array<TechnicianServiceAreaRef>',
         :'start_location_lat' => :'Float',
         :'start_location_long' => :'Float',
@@ -255,12 +265,20 @@ module Crisphive
         end
       end
 
+      if attributes.key?(:'left_at')
+        self.left_at = attributes[:'left_at']
+      end
+
       if attributes.key?(:'phone')
         self.phone = attributes[:'phone']
       end
 
       if attributes.key?(:'role')
         self.role = attributes[:'role']
+      end
+
+      if attributes.key?(:'role_key')
+        self.role_key = attributes[:'role_key']
       end
 
       if attributes.key?(:'service_areas')
@@ -314,6 +332,8 @@ module Crisphive
       warn '[DEPRECATED] the `valid?` method is obsolete'
       assignment_tier_validator = EnumAttributeValidator.new('String', ["lead", "buddy", "float"])
       return false unless assignment_tier_validator.valid?(@assignment_tier)
+      role_key_validator = EnumAttributeValidator.new('String', ["owner", "administrator", "booking_coordinator", "supervisor", "technician"])
+      return false unless role_key_validator.valid?(@role_key)
       start_location_type_validator = EnumAttributeValidator.new('String', ["home", "office"])
       return false unless start_location_type_validator.valid?(@start_location_type)
       true
@@ -327,6 +347,16 @@ module Crisphive
         fail ArgumentError, "invalid value for \"assignment_tier\", must be one of #{validator.allowable_values}."
       end
       @assignment_tier = assignment_tier
+    end
+
+    # Custom attribute writer method checking allowed values (enum).
+    # @param [Object] role_key Object to be assigned
+    def role_key=(role_key)
+      validator = EnumAttributeValidator.new('String', ["owner", "administrator", "booking_coordinator", "supervisor", "technician"])
+      unless validator.valid?(role_key)
+        fail ArgumentError, "invalid value for \"role_key\", must be one of #{validator.allowable_values}."
+      end
+      @role_key = role_key
     end
 
     # Custom attribute writer method checking allowed values (enum).
@@ -358,8 +388,10 @@ module Crisphive
           join_date == o.join_date &&
           last_login_at == o.last_login_at &&
           leads == o.leads &&
+          left_at == o.left_at &&
           phone == o.phone &&
           role == o.role &&
+          role_key == o.role_key &&
           service_areas == o.service_areas &&
           start_location_lat == o.start_location_lat &&
           start_location_long == o.start_location_long &&
@@ -379,7 +411,7 @@ module Crisphive
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [address, assignment_tier, buddy_ids, business_group_id, business_id, created_at, deleted_at, email, full_name, id, job_title, join_date, last_login_at, leads, phone, role, service_areas, start_location_lat, start_location_long, start_location_type, status, updated_at, user_id, vehicle_ids].hash
+      [address, assignment_tier, buddy_ids, business_group_id, business_id, created_at, deleted_at, email, full_name, id, job_title, join_date, last_login_at, leads, left_at, phone, role, role_key, service_areas, start_location_lat, start_location_long, start_location_type, status, updated_at, user_id, vehicle_ids].hash
     end
 
     # Builds the object from hash

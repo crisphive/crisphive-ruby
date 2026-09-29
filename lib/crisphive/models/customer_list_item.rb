@@ -30,6 +30,9 @@ module Crisphive
     # Total number of job requests booked.
     attr_accessor :request_count
 
+    # True when the customer has explicitly consented to receive SMS.
+    attr_accessor :sms_opt_in
+
     # Lifecycle status.
     attr_accessor :status
 
@@ -72,6 +75,7 @@ module Crisphive
         :'id' => :'id',
         :'last_request_at' => :'last_request_at',
         :'request_count' => :'request_count',
+        :'sms_opt_in' => :'sms_opt_in',
         :'status' => :'status',
         :'tier' => :'tier',
         :'uid' => :'uid',
@@ -92,6 +96,7 @@ module Crisphive
         :'id' => :'String',
         :'last_request_at' => :'Time',
         :'request_count' => :'Integer',
+        :'sms_opt_in' => :'Boolean',
         :'status' => :'String',
         :'tier' => :'String',
         :'uid' => :'String',
@@ -138,6 +143,10 @@ module Crisphive
 
       if attributes.key?(:'request_count')
         self.request_count = attributes[:'request_count']
+      end
+
+      if attributes.key?(:'sms_opt_in')
+        self.sms_opt_in = attributes[:'sms_opt_in']
       end
 
       if attributes.key?(:'status')
@@ -206,6 +215,7 @@ module Crisphive
           id == o.id &&
           last_request_at == o.last_request_at &&
           request_count == o.request_count &&
+          sms_opt_in == o.sms_opt_in &&
           status == o.status &&
           tier == o.tier &&
           uid == o.uid &&
@@ -221,7 +231,7 @@ module Crisphive
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [deleted_at, full_name, id, last_request_at, request_count, status, tier, uid, updated_at].hash
+      [deleted_at, full_name, id, last_request_at, request_count, sms_opt_in, status, tier, uid, updated_at].hash
     end
 
     # Builds the object from hash

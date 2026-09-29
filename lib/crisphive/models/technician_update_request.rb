@@ -36,7 +36,7 @@ module Crisphive
     # First working day (YYYY-MM-DD).
     attr_accessor :join_date
 
-    # At least one of phone/email is required.
+    # Phone number in E.164 international format (`+16135550188`); a bare national number is rejected with PHONE_INVALID — see AddTechnicianReq.Phone. At least one of phone/email is required — enforced in the usecase; see the note on AddTechnicianReq.Phone for why no binding rule may decide it.
     attr_accessor :phone
 
     # Explicit day-start latitude in decimal degrees (-90..90); when set it wins over the address geocode.

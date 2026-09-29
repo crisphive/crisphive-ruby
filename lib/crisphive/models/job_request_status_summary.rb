@@ -15,7 +15,7 @@ require 'time'
 
 module Crisphive
   class JobRequestStatusSummary
-    # Status display name, resolved to the request locale.
+    # Status display name as authored on the workflow (canonical; NOT resolved to the request locale).
     attr_accessor :display_name
 
     # Workflow status key (the business's workflow defines the set; first is always \"booking\", last always \"completed\").

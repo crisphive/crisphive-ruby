@@ -106,7 +106,7 @@ module Crisphive
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      reason_validator = EnumAttributeValidator.new('String', ["assignment_broken"])
+      reason_validator = EnumAttributeValidator.new('String', ["assignment_broken", "calendar_conflict"])
       return false unless reason_validator.valid?(@reason)
       true
     end
@@ -114,7 +114,7 @@ module Crisphive
     # Custom attribute writer method checking allowed values (enum).
     # @param [Object] reason Object to be assigned
     def reason=(reason)
-      validator = EnumAttributeValidator.new('String', ["assignment_broken"])
+      validator = EnumAttributeValidator.new('String', ["assignment_broken", "calendar_conflict"])
       unless validator.valid?(reason)
         fail ArgumentError, "invalid value for \"reason\", must be one of #{validator.allowable_values}."
       end

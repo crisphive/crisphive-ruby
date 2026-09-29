@@ -15,6 +15,9 @@ require 'time'
 
 module Crisphive
   class JobRequestMovePreviewReq
+    # AfterHoursOverride — drop the non-working-day rejection for a P0 whose technician the coordinator has already phoned. P0 only (JOB_REQUEST_AFTER_HOURS_REQUIRES_P0 otherwise), and the preview then carries an AFTER_HOURS warning. Commit must repeat what the preview was run with.
+    attr_accessor :after_hours_override
+
     # Cascade mode for displaced jobs: overtime = stay same-day (tech works late); next_day = overflow rolls to the next working day.
     attr_accessor :mode
 
@@ -49,6 +52,7 @@ module Crisphive
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
+        :'after_hours_override' => :'after_hours_override',
         :'mode' => :'mode',
         :'start_at' => :'start_at',
         :'technician_id' => :'technician_id'
@@ -63,6 +67,7 @@ module Crisphive
     # Attribute type mapping.
     def self.openapi_types
       {
+        :'after_hours_override' => :'Boolean',
         :'mode' => :'String',
         :'start_at' => :'String',
         :'technician_id' => :'String'
@@ -89,6 +94,10 @@ module Crisphive
         end
         h[k.to_sym] = v
       }
+
+      if attributes.key?(:'after_hours_override')
+        self.after_hours_override = attributes[:'after_hours_override']
+      end
 
       if attributes.key?(:'mode')
         self.mode = attributes[:'mode']
@@ -156,6 +165,7 @@ module Crisphive
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
+          after_hours_override == o.after_hours_override &&
           mode == o.mode &&
           start_at == o.start_at &&
           technician_id == o.technician_id
@@ -170,7 +180,7 @@ module Crisphive
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [mode, start_at, technician_id].hash
+      [after_hours_override, mode, start_at, technician_id].hash
     end
 
     # Builds the object from hash

@@ -21,10 +21,22 @@ module Crisphive
     # When the job type was created (RFC3339).
     attr_accessor :created_at
 
+    # Default demobilization minutes applied with the default duration. Absent = none.
+    attr_accessor :default_demobilization_minutes
+
+    # Default work duration in minutes used when a quote omits job_duration_minutes. Absent = no default: a quote for this type must send a duration.
+    attr_accessor :default_duration_minutes
+
+    # Default mobilization minutes applied with the default duration. Absent = none.
+    attr_accessor :default_mobilization_minutes
+
     # Job type UUID — the stable identifier used in every job-type endpoint.
     attr_accessor :id
 
-    # True for platform-seeded system rows, which cannot be modified or deleted.
+    # True for the business's DEFAULT job type (the seeded \"General\"): a job booked without a job_type_id gets it, and a job with no job type is quoted from its default bundle. It cannot be deleted or deactivated and its default duration cannot be cleared (it can be changed). Exactly one per business per environment (live and sandbox each have their own).
+    attr_accessor :is_default
+
+    # True for platform-seeded system rows: their name and status cannot be modified and they cannot be deleted; their default quote bundle is editable.
     attr_accessor :is_system
 
     # Job type name, localized server-side to the request locale.
@@ -63,7 +75,11 @@ module Crisphive
       {
         :'business_id' => :'business_id',
         :'created_at' => :'created_at',
+        :'default_demobilization_minutes' => :'default_demobilization_minutes',
+        :'default_duration_minutes' => :'default_duration_minutes',
+        :'default_mobilization_minutes' => :'default_mobilization_minutes',
         :'id' => :'id',
+        :'is_default' => :'is_default',
         :'is_system' => :'is_system',
         :'name' => :'name',
         :'status' => :'status',
@@ -81,7 +97,11 @@ module Crisphive
       {
         :'business_id' => :'String',
         :'created_at' => :'Time',
+        :'default_demobilization_minutes' => :'Integer',
+        :'default_duration_minutes' => :'Integer',
+        :'default_mobilization_minutes' => :'Integer',
         :'id' => :'String',
+        :'is_default' => :'Boolean',
         :'is_system' => :'Boolean',
         :'name' => :'String',
         :'status' => :'String',
@@ -118,8 +138,24 @@ module Crisphive
         self.created_at = attributes[:'created_at']
       end
 
+      if attributes.key?(:'default_demobilization_minutes')
+        self.default_demobilization_minutes = attributes[:'default_demobilization_minutes']
+      end
+
+      if attributes.key?(:'default_duration_minutes')
+        self.default_duration_minutes = attributes[:'default_duration_minutes']
+      end
+
+      if attributes.key?(:'default_mobilization_minutes')
+        self.default_mobilization_minutes = attributes[:'default_mobilization_minutes']
+      end
+
       if attributes.key?(:'id')
         self.id = attributes[:'id']
+      end
+
+      if attributes.key?(:'is_default')
+        self.is_default = attributes[:'is_default']
       end
 
       if attributes.key?(:'is_system')
@@ -173,7 +209,11 @@ module Crisphive
       self.class == o.class &&
           business_id == o.business_id &&
           created_at == o.created_at &&
+          default_demobilization_minutes == o.default_demobilization_minutes &&
+          default_duration_minutes == o.default_duration_minutes &&
+          default_mobilization_minutes == o.default_mobilization_minutes &&
           id == o.id &&
+          is_default == o.is_default &&
           is_system == o.is_system &&
           name == o.name &&
           status == o.status &&
@@ -189,7 +229,7 @@ module Crisphive
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [business_id, created_at, id, is_system, name, status, updated_at].hash
+      [business_id, created_at, default_demobilization_minutes, default_duration_minutes, default_mobilization_minutes, id, is_default, is_system, name, status, updated_at].hash
     end
 
     # Builds the object from hash

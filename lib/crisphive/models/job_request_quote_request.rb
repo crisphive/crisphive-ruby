@@ -21,7 +21,10 @@ module Crisphive
     # Demobilization (teardown) minutes added after the work. Optional, min 0.
     attr_accessor :demobilization_minutes
 
-    # Hands-on work duration in minutes (man-minutes for a crew job). Required, min 1.
+    # Schedule the job even when no technician can take it in ANY window the customer asked for (outside working hours, outside every service area, nobody free). Without it that case answers 409 JOB_REQUEST_QUOTE_NOT_SCHEDULABLE with the reason, so the coordinator can agree a different time with the customer first. Send true only after that conversation; the override is recorded in the activity feed.
+    attr_accessor :force
+
+    # Hands-on work duration in minutes (man-minutes for a crew job), min 1. On POST /quote it may be OMITTED when the job's job type carries a default_duration_minutes: the quote then uses the type's default duration and its default buffers (a buffer you send still wins). No duration and no default answers 400 JOB_REQUEST_QUOTE_INVALID. PATCH /quote always requires it.
     attr_accessor :job_duration_minutes
 
     # Mobilization (setup/travel-prep) minutes added before the work. Optional, min 0.
@@ -35,6 +38,7 @@ module Crisphive
       {
         :'crew' => :'crew',
         :'demobilization_minutes' => :'demobilization_minutes',
+        :'force' => :'force',
         :'job_duration_minutes' => :'job_duration_minutes',
         :'mobilization_minutes' => :'mobilization_minutes',
         :'status_version' => :'status_version'
@@ -51,6 +55,7 @@ module Crisphive
       {
         :'crew' => :'Array<JobRequestCrewMemberInput>',
         :'demobilization_minutes' => :'Integer',
+        :'force' => :'Boolean',
         :'job_duration_minutes' => :'Integer',
         :'mobilization_minutes' => :'Integer',
         :'status_version' => :'Integer'
@@ -88,10 +93,12 @@ module Crisphive
         self.demobilization_minutes = attributes[:'demobilization_minutes']
       end
 
+      if attributes.key?(:'force')
+        self.force = attributes[:'force']
+      end
+
       if attributes.key?(:'job_duration_minutes')
         self.job_duration_minutes = attributes[:'job_duration_minutes']
-      else
-        self.job_duration_minutes = nil
       end
 
       if attributes.key?(:'mobilization_minutes')
@@ -116,11 +123,7 @@ module Crisphive
         invalid_properties.push('invalid value for "demobilization_minutes", must be greater than or equal to 0.')
       end
 
-      if @job_duration_minutes.nil?
-        invalid_properties.push('invalid value for "job_duration_minutes", job_duration_minutes cannot be nil.')
-      end
-
-      if @job_duration_minutes < 1
+      if !@job_duration_minutes.nil? && @job_duration_minutes < 1
         invalid_properties.push('invalid value for "job_duration_minutes", must be greater than or equal to 1.')
       end
 
@@ -137,8 +140,7 @@ module Crisphive
       warn '[DEPRECATED] the `valid?` method is obsolete'
       return false if !@crew.nil? && @crew.length > 20
       return false if !@demobilization_minutes.nil? && @demobilization_minutes < 0
-      return false if @job_duration_minutes.nil?
-      return false if @job_duration_minutes < 1
+      return false if !@job_duration_minutes.nil? && @job_duration_minutes < 1
       return false if !@mobilization_minutes.nil? && @mobilization_minutes < 0
       true
     end
@@ -206,6 +208,7 @@ module Crisphive
       self.class == o.class &&
           crew == o.crew &&
           demobilization_minutes == o.demobilization_minutes &&
+          force == o.force &&
           job_duration_minutes == o.job_duration_minutes &&
           mobilization_minutes == o.mobilization_minutes &&
           status_version == o.status_version
@@ -220,7 +223,7 @@ module Crisphive
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [crew, demobilization_minutes, job_duration_minutes, mobilization_minutes, status_version].hash
+      [crew, demobilization_minutes, force, job_duration_minutes, mobilization_minutes, status_version].hash
     end
 
     # Builds the object from hash

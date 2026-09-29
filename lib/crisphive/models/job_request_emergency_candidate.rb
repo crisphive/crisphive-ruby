@@ -42,6 +42,9 @@ module Crisphive
     # ETA estimate in minutes from the tech's start location to the site — static origin (no live GPS), rank hint not a promise.
     attr_accessor :travel_minutes
 
+    # Per-technician warnings, e.g. TIME_OFF_OVERLAP when this technician is on approved leave at the requested time (only reachable with after_hours_override, which stops leave from rejecting).
+    attr_accessor :warnings
+
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
@@ -53,7 +56,8 @@ module Crisphive
         :'technician_id' => :'technician_id',
         :'total_moves' => :'total_moves',
         :'total_score' => :'total_score',
-        :'travel_minutes' => :'travel_minutes'
+        :'travel_minutes' => :'travel_minutes',
+        :'warnings' => :'warnings'
       }
     end
 
@@ -73,7 +77,8 @@ module Crisphive
         :'technician_id' => :'String',
         :'total_moves' => :'Integer',
         :'total_score' => :'Float',
-        :'travel_minutes' => :'Float'
+        :'travel_minutes' => :'Float',
+        :'warnings' => :'Array<JobRequestMoveWarning>'
       }
     end
 
@@ -135,6 +140,12 @@ module Crisphive
       if attributes.key?(:'travel_minutes')
         self.travel_minutes = attributes[:'travel_minutes']
       end
+
+      if attributes.key?(:'warnings')
+        if (value = attributes[:'warnings']).is_a?(Array)
+          self.warnings = value
+        end
+      end
     end
 
     # Show invalid properties with the reasons. Usually used together with valid?
@@ -165,7 +176,8 @@ module Crisphive
           technician_id == o.technician_id &&
           total_moves == o.total_moves &&
           total_score == o.total_score &&
-          travel_minutes == o.travel_minutes
+          travel_minutes == o.travel_minutes &&
+          warnings == o.warnings
     end
 
     # @see the `==` method
@@ -177,7 +189,7 @@ module Crisphive
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [booked_minutes, days, distance_km, full_name, matched_skills, technician_id, total_moves, total_score, travel_minutes].hash
+      [booked_minutes, days, distance_km, full_name, matched_skills, technician_id, total_moves, total_score, travel_minutes, warnings].hash
     end
 
     # Builds the object from hash

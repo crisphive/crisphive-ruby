@@ -24,7 +24,7 @@ module Crisphive
     # Requested date(s) + period(s) the customer wants the job. At least one, up to 12.
     attr_accessor :job_dates
 
-    # UUID of the job type to classify this job. Optional; null leaves the job unclassified.
+    # UUID of the job type to classify this job. Optional: omitted, the business's DEFAULT job type (`is_default`, the seeded \"General\") is used, so every new job has a type and can be quoted from its default duration.
     attr_accessor :job_type_id
 
     # Scheduling priority. Optional; omitted bookings receive the business's default_priority setting (assignment settings, default p2). p0=emergency (interrupt-driven insert), p1=top (displaced only by p0), p2=standard, p3=deferrable (first candidate for displacement).

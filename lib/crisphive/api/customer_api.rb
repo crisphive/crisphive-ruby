@@ -219,7 +219,8 @@ module Crisphive
     # List customers
     # Returns a paginated, searchable directory of the business's customer records — the customer database (CRM) behind every booking and work order. Supports the `since`/`next_since` cursor for incremental sync into an external CRM, ERP or marketing tool.
     # @param [Hash] opts the optional parameters
-    # @option opts [String] :q Search name, UID, phone, email
+    # @option opts [String] :q Fuzzy search over name, UID, phone, email
+    # @option opts [String] :phone EXACT caller lookup by phone in E.164 with the leading + (e.g. +16135550188). Separators are stripped, so &#39;+1 (613) 555-0188&#39; works; a bare national number without a country code is refused with PHONE_INVALID. Use this rather than q to identify a caller — q is a substring match and can return the wrong person.
     # @option opts [Array<String>] :tier Filter by tier: regular|vip (repeatable)
     # @option opts [String] :status Filter by status: active|inactive
     # @option opts [String] :preferred_technician_id Filter by preferred technician UUID
@@ -236,7 +237,8 @@ module Crisphive
     # List customers
     # Returns a paginated, searchable directory of the business&#39;s customer records — the customer database (CRM) behind every booking and work order. Supports the &#x60;since&#x60;/&#x60;next_since&#x60; cursor for incremental sync into an external CRM, ERP or marketing tool.
     # @param [Hash] opts the optional parameters
-    # @option opts [String] :q Search name, UID, phone, email
+    # @option opts [String] :q Fuzzy search over name, UID, phone, email
+    # @option opts [String] :phone EXACT caller lookup by phone in E.164 with the leading + (e.g. +16135550188). Separators are stripped, so &#39;+1 (613) 555-0188&#39; works; a bare national number without a country code is refused with PHONE_INVALID. Use this rather than q to identify a caller — q is a substring match and can return the wrong person.
     # @option opts [Array<String>] :tier Filter by tier: regular|vip (repeatable)
     # @option opts [String] :status Filter by status: active|inactive
     # @option opts [String] :preferred_technician_id Filter by preferred technician UUID
@@ -255,6 +257,7 @@ module Crisphive
       # query parameters
       query_params = opts[:query_params] || {}
       query_params[:'q'] = opts[:'q'] if !opts[:'q'].nil?
+      query_params[:'phone'] = opts[:'phone'] if !opts[:'phone'].nil?
       query_params[:'tier'] = @api_client.build_collection_param(opts[:'tier'], :multi) if !opts[:'tier'].nil?
       query_params[:'status'] = opts[:'status'] if !opts[:'status'].nil?
       query_params[:'preferred_technician_id'] = opts[:'preferred_technician_id'] if !opts[:'preferred_technician_id'].nil?
@@ -298,7 +301,7 @@ module Crisphive
     end
 
     # Update a customer
-    # Replaces mutable fields on a customer record — two-way CRM sync friendly (push changes from your system of record). Pass service_area_id=\"\" to clear the service area. Address fields (including latitude/longitude) live under the nested `address` object.
+    # PARTIAL update — send only the fields you are changing; anything you OMIT is left exactly as stored (two-way CRM sync friendly: push one field from your system of record without re-sending the record). To CLEAR a field, send it as an empty string: uid, phone, email, notes, preferred_technician_id, service_area_id. `tier` and `status` are enums with no empty member, so an empty value there is ignored rather than stored. `full_name` cannot be set to empty. The nested `address` object is all-or-nothing: omit it to leave the stored address (and its coordinates) untouched; when present it REPLACES the whole block, and missing latitude/longitude are geocoded from the address. A customer must keep at least one contact channel — an update that would clear both phone and email is refused with PHONE_OR_EMAIL_REQUIRED.
     # @param id [String] Customer ID (UUID)
     # @param customer_update_request [CustomerUpdateRequest] Fields to update
     # @param [Hash] opts the optional parameters
@@ -309,7 +312,7 @@ module Crisphive
     end
 
     # Update a customer
-    # Replaces mutable fields on a customer record — two-way CRM sync friendly (push changes from your system of record). Pass service_area_id&#x3D;\&quot;\&quot; to clear the service area. Address fields (including latitude/longitude) live under the nested &#x60;address&#x60; object.
+    # PARTIAL update — send only the fields you are changing; anything you OMIT is left exactly as stored (two-way CRM sync friendly: push one field from your system of record without re-sending the record). To CLEAR a field, send it as an empty string: uid, phone, email, notes, preferred_technician_id, service_area_id. &#x60;tier&#x60; and &#x60;status&#x60; are enums with no empty member, so an empty value there is ignored rather than stored. &#x60;full_name&#x60; cannot be set to empty. The nested &#x60;address&#x60; object is all-or-nothing: omit it to leave the stored address (and its coordinates) untouched; when present it REPLACES the whole block, and missing latitude/longitude are geocoded from the address. A customer must keep at least one contact channel — an update that would clear both phone and email is refused with PHONE_OR_EMAIL_REQUIRED.
     # @param id [String] Customer ID (UUID)
     # @param customer_update_request [CustomerUpdateRequest] Fields to update
     # @param [Hash] opts the optional parameters

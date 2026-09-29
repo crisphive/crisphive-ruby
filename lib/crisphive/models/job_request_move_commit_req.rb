@@ -15,6 +15,9 @@ require 'time'
 
 module Crisphive
   class JobRequestMoveCommitReq
+    # AfterHoursOverride — drop the non-working-day rejection for a P0 whose technician the coordinator has already phoned. P0 only (JOB_REQUEST_AFTER_HOURS_REQUIRES_P0 otherwise), and the preview then carries an AFTER_HOURS warning. Commit must repeat what the preview was run with.
+    attr_accessor :after_hours_override
+
     # ExpectedMemberIDs — crew moves only: the FULL member set the preview staffed (echo data.members[].technician_id). If the commit's re-plan would staff a DIFFERENT set (a previewed replacement got booked in the meantime), the commit is rejected with SCHEDULE_MOVE_PLAN_DRIFTED — crew swaps are never approved unseen. Omit to opt out.
     attr_accessor :expected_member_ids
 
@@ -58,6 +61,7 @@ module Crisphive
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
+        :'after_hours_override' => :'after_hours_override',
         :'expected_member_ids' => :'expected_member_ids',
         :'expected_move_ids' => :'expected_move_ids',
         :'expected_version' => :'expected_version',
@@ -75,6 +79,7 @@ module Crisphive
     # Attribute type mapping.
     def self.openapi_types
       {
+        :'after_hours_override' => :'Boolean',
         :'expected_member_ids' => :'Array<String>',
         :'expected_move_ids' => :'Array<String>',
         :'expected_version' => :'Integer',
@@ -104,6 +109,10 @@ module Crisphive
         end
         h[k.to_sym] = v
       }
+
+      if attributes.key?(:'after_hours_override')
+        self.after_hours_override = attributes[:'after_hours_override']
+      end
 
       if attributes.key?(:'expected_member_ids')
         if (value = attributes[:'expected_member_ids']).is_a?(Array)
@@ -206,6 +215,7 @@ module Crisphive
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
+          after_hours_override == o.after_hours_override &&
           expected_member_ids == o.expected_member_ids &&
           expected_move_ids == o.expected_move_ids &&
           expected_version == o.expected_version &&
@@ -223,7 +233,7 @@ module Crisphive
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [expected_member_ids, expected_move_ids, expected_version, mode, start_at, technician_id].hash
+      [after_hours_override, expected_member_ids, expected_move_ids, expected_version, mode, start_at, technician_id].hash
     end
 
     # Builds the object from hash

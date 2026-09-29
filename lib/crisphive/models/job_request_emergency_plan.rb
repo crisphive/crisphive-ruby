@@ -33,6 +33,9 @@ module Crisphive
     # Cascade mode the plan assumed (overtime | next_day).
     attr_accessor :mode
 
+    # ReassignFallbacks: one entry per displaced job that reassign mode could NOT re-staff, and therefore left in days[].moves[] to be rescheduled. Empty in reschedule mode. Read this INSTEAD of inferring \"nobody was free\" from an empty reassignments[] — the two are different states (no fallbacks + empty reassignments means nothing was displaced at all).
+    attr_accessor :reassign_fallbacks
+
     # Displaced jobs handed to an ALTERNATE technician at their original window (displacement_mode=reassign; empty otherwise). Jobs that could not be re-staffed remain in days/total_moves (reschedule fallback).
     attr_accessor :reassignments
 
@@ -42,7 +45,7 @@ module Crisphive
     # Number of displaced jobs pushed to a later window.
     attr_accessor :total_moves
 
-    # Non-blocking consequences the coordinator accepts by committing (TIME_OFF_OVERLAP per displaced job landing in the tech's approved leave).
+    # Non-blocking consequences the coordinator accepts by committing (TIME_OFF_OVERLAP per displaced job landing in the tech's approved leave, CALENDAR_OVERLAP per displaced job landing on a personal calendar event).
     attr_accessor :warnings
 
     class EnumAttributeValidator
@@ -76,6 +79,7 @@ module Crisphive
         :'emergency_job_id' => :'emergency_job_id',
         :'emergency_start' => :'emergency_start',
         :'mode' => :'mode',
+        :'reassign_fallbacks' => :'reassign_fallbacks',
         :'reassignments' => :'reassignments',
         :'technician_id' => :'technician_id',
         :'total_moves' => :'total_moves',
@@ -97,6 +101,7 @@ module Crisphive
         :'emergency_job_id' => :'String',
         :'emergency_start' => :'Time',
         :'mode' => :'String',
+        :'reassign_fallbacks' => :'Array<JobRequestReassignFallback>',
         :'reassignments' => :'Array<JobRequestRescheduleReassignment>',
         :'technician_id' => :'String',
         :'total_moves' => :'Integer',
@@ -149,6 +154,12 @@ module Crisphive
 
       if attributes.key?(:'mode')
         self.mode = attributes[:'mode']
+      end
+
+      if attributes.key?(:'reassign_fallbacks')
+        if (value = attributes[:'reassign_fallbacks']).is_a?(Array)
+          self.reassign_fallbacks = value
+        end
       end
 
       if attributes.key?(:'reassignments')
@@ -210,6 +221,7 @@ module Crisphive
           emergency_job_id == o.emergency_job_id &&
           emergency_start == o.emergency_start &&
           mode == o.mode &&
+          reassign_fallbacks == o.reassign_fallbacks &&
           reassignments == o.reassignments &&
           technician_id == o.technician_id &&
           total_moves == o.total_moves &&
@@ -225,7 +237,7 @@ module Crisphive
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [business_timezone, days, emergency_end, emergency_job_id, emergency_start, mode, reassignments, technician_id, total_moves, warnings].hash
+      [business_timezone, days, emergency_end, emergency_job_id, emergency_start, mode, reassign_fallbacks, reassignments, technician_id, total_moves, warnings].hash
     end
 
     # Builds the object from hash

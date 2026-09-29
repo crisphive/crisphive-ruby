@@ -19,6 +19,140 @@ module Crisphive
     def initialize(api_client = ApiClient.default)
       @api_client = api_client
     end
+    # Add a vehicle to the fleet
+    # Registers a van, truck or car in the business's own fleet. Vehicles are what a confirmed job's crew travels in: at confirm, Crisphive auto-selects one vehicle for the whole crew from the lead technician's vehicles, then from unowned fleet vehicles, and blocks a vehicle already booked for an overlapping job.  `name` is the only required field, so a bulk fleet import needs nothing else; brand, model, year, plate_number, current_mileage and vehicle_type (van, truck or car) can be filled in later with updateVehicle. Names and plate numbers must be unique in the business (VEHICLE_DUPLICATE_NAME / VEHICLE_DUPLICATE_PLATE).  `owner_id` records who has CLAIMED the vehicle as their primary one. The owner must be a lead technician or a management role; a buddy- or float-tier profile is refused with VEHICLE_OWNER_TIER_NOT_ALLOWED, an unknown profile with VEHICLE_INVALID_OWNER. Deciding which vehicles a technician may USE is a separate relation: use replaceTechnicianVehicles for that, not this tool.  Send an Idempotency-Key header (the `idempotency_key` argument over MCP) so a retried call replays the original response instead of creating a duplicate vehicle.
+    # @param vehicle_create_request [VehicleCreateRequest] Vehicle details
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key replays the original response (header Idempotent-Replayed: true) instead of re-running the operation. Reusing a key with a different body returns 422 IDEMPOTENCY_KEY_REUSE.
+    # @return [CreateVehicle200Response]
+    def create_vehicle(vehicle_create_request, opts = {})
+      data, _status_code, _headers = create_vehicle_with_http_info(vehicle_create_request, opts)
+      data
+    end
+
+    # Add a vehicle to the fleet
+    # Registers a van, truck or car in the business&#39;s own fleet. Vehicles are what a confirmed job&#39;s crew travels in: at confirm, Crisphive auto-selects one vehicle for the whole crew from the lead technician&#39;s vehicles, then from unowned fleet vehicles, and blocks a vehicle already booked for an overlapping job.  &#x60;name&#x60; is the only required field, so a bulk fleet import needs nothing else; brand, model, year, plate_number, current_mileage and vehicle_type (van, truck or car) can be filled in later with updateVehicle. Names and plate numbers must be unique in the business (VEHICLE_DUPLICATE_NAME / VEHICLE_DUPLICATE_PLATE).  &#x60;owner_id&#x60; records who has CLAIMED the vehicle as their primary one. The owner must be a lead technician or a management role; a buddy- or float-tier profile is refused with VEHICLE_OWNER_TIER_NOT_ALLOWED, an unknown profile with VEHICLE_INVALID_OWNER. Deciding which vehicles a technician may USE is a separate relation: use replaceTechnicianVehicles for that, not this tool.  Send an Idempotency-Key header (the &#x60;idempotency_key&#x60; argument over MCP) so a retried call replays the original response instead of creating a duplicate vehicle.
+    # @param vehicle_create_request [VehicleCreateRequest] Vehicle details
+    # @param [Hash] opts the optional parameters
+    # @option opts [String] :idempotency_key Unique key making retries safe: a repeat send with the same key replays the original response (header Idempotent-Replayed: true) instead of re-running the operation. Reusing a key with a different body returns 422 IDEMPOTENCY_KEY_REUSE.
+    # @return [Array<(CreateVehicle200Response, Integer, Hash)>] CreateVehicle200Response data, response status code and response headers
+    def create_vehicle_with_http_info(vehicle_create_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: VehicleApi.create_vehicle ...'
+      end
+      # verify the required parameter 'vehicle_create_request' is set
+      if @api_client.config.client_side_validation && vehicle_create_request.nil?
+        fail ArgumentError, "Missing the required parameter 'vehicle_create_request' when calling VehicleApi.create_vehicle"
+      end
+      # resource path
+      local_var_path = '/vehicles'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+      header_params[:'Idempotency-Key'] = opts[:'idempotency_key'] if !opts[:'idempotency_key'].nil?
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(vehicle_create_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'CreateVehicle200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"VehicleApi.create_vehicle",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: VehicleApi#create_vehicle\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Retire a vehicle from the fleet
+    # Soft-deletes the vehicle and, in the same transaction, removes it from every technician's vehicle list. It no longer appears in listVehicles or getVehicle and can no longer be auto-selected for a crew.  Jobs that referenced it keep the stored reference but no longer display an assigned vehicle, and upcoming jobs are NOT given a replacement automatically. Reach for this only when a vehicle leaves the fleet for good (sold, written off, off-lease). For a van that is merely in the workshop, set its `status` to maintenance with updateVehicle instead, so the record stays in the fleet and can be brought straight back.
+    # @param id [String] Vehicle ID
+    # @param [Hash] opts the optional parameters
+    # @return [ResponseEnvelope]
+    def delete_vehicle(id, opts = {})
+      data, _status_code, _headers = delete_vehicle_with_http_info(id, opts)
+      data
+    end
+
+    # Retire a vehicle from the fleet
+    # Soft-deletes the vehicle and, in the same transaction, removes it from every technician&#39;s vehicle list. It no longer appears in listVehicles or getVehicle and can no longer be auto-selected for a crew.  Jobs that referenced it keep the stored reference but no longer display an assigned vehicle, and upcoming jobs are NOT given a replacement automatically. Reach for this only when a vehicle leaves the fleet for good (sold, written off, off-lease). For a van that is merely in the workshop, set its &#x60;status&#x60; to maintenance with updateVehicle instead, so the record stays in the fleet and can be brought straight back.
+    # @param id [String] Vehicle ID
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(ResponseEnvelope, Integer, Hash)>] ResponseEnvelope data, response status code and response headers
+    def delete_vehicle_with_http_info(id, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: VehicleApi.delete_vehicle ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling VehicleApi.delete_vehicle"
+      end
+      # resource path
+      local_var_path = '/vehicles/{id}'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ResponseEnvelope'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"VehicleApi.delete_vehicle",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:DELETE, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: VehicleApi#delete_vehicle\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
     # Get a vehicle
     # Returns one fleet vehicle (service van/truck): identity, plate, operational status (idle, on job, maintenance) and which technicians use it — the fleet-management view of a single asset.
     # @param id [String] Vehicle ID
@@ -150,6 +284,80 @@ module Crisphive
       data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
       if @api_client.config.debugging
         @api_client.config.logger.debug "API called: VehicleApi#list_vehicles\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Change a vehicle's details
+    # Edits an existing fleet record in place; the vehicle id and the technicians who use it are untouched.  Partial update: omit a field to KEEP its current value, send \"\" to CLEAR an optional text field (brand, model, plate_number). Exceptions: `name` rejects \"\" because a vehicle must stay identifiable, and `vehicle_type` (van, truck, car) and `status` (inactive, idle, on_job, maintenance) must be valid enum values when present; an empty string there is a 400. `owner_id`: omit to keep the current owner, \"\" to unclaim, or a UUID to reassign; the new owner must be a lead or management profile (VEHICLE_OWNER_TIER_NOT_ALLOWED otherwise).  Use this for corrections and odometer updates, and set `status` to maintenance or inactive when a vehicle is temporarily out of service so it stays in the fleet. To change which technicians may use it, call replaceTechnicianVehicles; to take it out of the fleet for good, call deleteVehicle.
+    # @param id [String] Vehicle ID
+    # @param vehicle_update_request [VehicleUpdateRequest] Vehicle details
+    # @param [Hash] opts the optional parameters
+    # @return [ResponseEnvelope]
+    def update_vehicle(id, vehicle_update_request, opts = {})
+      data, _status_code, _headers = update_vehicle_with_http_info(id, vehicle_update_request, opts)
+      data
+    end
+
+    # Change a vehicle&#39;s details
+    # Edits an existing fleet record in place; the vehicle id and the technicians who use it are untouched.  Partial update: omit a field to KEEP its current value, send \&quot;\&quot; to CLEAR an optional text field (brand, model, plate_number). Exceptions: &#x60;name&#x60; rejects \&quot;\&quot; because a vehicle must stay identifiable, and &#x60;vehicle_type&#x60; (van, truck, car) and &#x60;status&#x60; (inactive, idle, on_job, maintenance) must be valid enum values when present; an empty string there is a 400. &#x60;owner_id&#x60;: omit to keep the current owner, \&quot;\&quot; to unclaim, or a UUID to reassign; the new owner must be a lead or management profile (VEHICLE_OWNER_TIER_NOT_ALLOWED otherwise).  Use this for corrections and odometer updates, and set &#x60;status&#x60; to maintenance or inactive when a vehicle is temporarily out of service so it stays in the fleet. To change which technicians may use it, call replaceTechnicianVehicles; to take it out of the fleet for good, call deleteVehicle.
+    # @param id [String] Vehicle ID
+    # @param vehicle_update_request [VehicleUpdateRequest] Vehicle details
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(ResponseEnvelope, Integer, Hash)>] ResponseEnvelope data, response status code and response headers
+    def update_vehicle_with_http_info(id, vehicle_update_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: VehicleApi.update_vehicle ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling VehicleApi.update_vehicle"
+      end
+      # verify the required parameter 'vehicle_update_request' is set
+      if @api_client.config.client_side_validation && vehicle_update_request.nil?
+        fail ArgumentError, "Missing the required parameter 'vehicle_update_request' when calling VehicleApi.update_vehicle"
+      end
+      # resource path
+      local_var_path = '/vehicles/{id}'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(vehicle_update_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ResponseEnvelope'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['ApiKeyAuth']
+
+      new_options = opts.merge(
+        :operation => :"VehicleApi.update_vehicle",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:PUT, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: VehicleApi#update_vehicle\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
       end
       return data, status_code, headers
     end
